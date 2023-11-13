@@ -39,15 +39,18 @@
     <ClInclude Include="sphere.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="cylinder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\GLFW GLAD Installation Using Visual Studio 2022\GLFW GLAD Installation Using Visual Studio 2022\opengl\glad.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="stb_image.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="main - Copy.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -1,9 +1,4 @@
-//
-//  spotLight.h
-//  test
-//
-//  Created by Nazirul Hasan on 22/9/23.
-//
+
 
 #ifndef spotLight_h
 #define spotLight_h
