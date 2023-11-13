@@ -99,7 +99,7 @@ public:
             lightingShader.setFloat("pointLights[5].k_l", k_l);
             lightingShader.setFloat("pointLights[5].k_q", k_q);
         }
-        /*
+        
         else if (lightNumber == 7)
         {
             lightingShader.setVec3("pointLights[6].position", position);
@@ -109,7 +109,7 @@ public:
             lightingShader.setFloat("pointLights[6].k_c", k_c);
             lightingShader.setFloat("pointLights[6].k_l", k_l);
             lightingShader.setFloat("pointLights[6].k_q", k_q);
-        }
+        }/*
         else
         {
             lightingShader.setVec3("pointLights[7].position", position);
