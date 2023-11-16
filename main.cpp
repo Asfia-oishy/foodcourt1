@@ -14,7 +14,6 @@
 #include "sphere.h"
 
 #include "SpotLight.h"
-
 #include <iostream>
 
 using namespace std;
@@ -24,25 +23,25 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 unsigned int loadTexture(char const* path, GLenum textureWrappingModeS, GLenum textureWrappingModeT, GLenum textureFilteringModeMin, GLenum textureFilteringModeMax);
 void processInput(GLFWwindow* window);
-void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
 void scsToWcs(float sx, float sy, float wcsv[3]);
-unsigned int drawControlPoints();
-//void saveControlPoints();
-void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 long long nCr(int n, int r);
 void BezierCurve(double t, float xy[2], GLfloat ctrlpoints[], int L); //curve calculation er jnno
 unsigned int hollowBezier(GLfloat ctrlpoints[], int L);
 void drawCube(unsigned int& cubeVAO, Shader& lightingShader, glm::mat4 model, float r, float g, float b);
 void table(unsigned int& cubeVAO, Shader& lightingShader, glm::mat4 alTogether);
 void fan(unsigned int& cubeVAO, Shader& lightingShader, glm::mat4 alTogether);
-void fan_holder(unsigned int& cubeVAO, Shader& lightingShader, glm::mat4 alTogether);
+void fan_holder(unsigned int& cubeVAO, Shader& lightingShader, glm::mat4 alTogether, Sphere& sp);
 void chair(unsigned int& cubeVAO, Shader& lightingShader, glm::mat4 alTogether);
-void kitchen(unsigned int& cubeVAO, Shader& lightingShader, Shader& lightingShaderWithTexture,Cube& cube, Sphere& sp);
+void kitchen(unsigned int& cubeVAO, Shader& lightingShader, Shader& lightingShaderWithTexture, Cube& cube, Sphere& sp);
 void chair(unsigned int& cubeVAO, Shader& lightingShader, glm::mat4 alTogether);
 void tap(unsigned int& cubeVAO, Shader& lightingShader, glm::mat4 alTogether, Sphere& sp);
 void sink(unsigned int& cubeVAO, Shader& lightingShader, glm::mat4 alTogether);
 void stove(unsigned int& cubeVAO, Shader& lightingShader, Sphere& sp);
 void basin(unsigned int& cubeVAO, Shader& lightingShader, Sphere& sp, Sphere& sp2);
+void fridge(unsigned int& cubeVAO, Shader& lightingShader, Sphere& sp, glm::mat4 alTogether);
+void oven(unsigned int& cubeVAO, Shader& lightingShader, Shader& lightingShaderWithTexture, glm::mat4 alTogether);
+void lamp(Shader& lightingShader, glm::mat4 all);
+void objects(Shader& lightingShader, glm::mat4 all, float r, float g, float b, vector<float> v);
 // settings
 const unsigned int SCR_WIDTH = 1300;
 const unsigned int SCR_HEIGHT = 700;
@@ -63,7 +62,10 @@ float scale_Z = 1.0;
 float z_move1 = 0.0f;
 float z_move2 = 0.0f;
 float door = 0.0f;
-
+float tap_w = 0.0f;
+float frotate = 0.0f;
+float frotate2 = 0.0f;
+float fr = 0.0f;
 bool pLight = false;
 bool dLight = false;
 bool sLight = false;
@@ -71,6 +73,7 @@ bool sLight = false;
 bool fanSwitch = false;
 float r = 0.0f;
 
+glm::mat4 change = glm::mat4(1.0f);
 
 // model, view & projection matrix
 glm::mat4 model = glm::mat4(1.0f);
@@ -82,7 +85,148 @@ GLint viewport[4];
 
 /////////////////////////////////////////////////////////////
 float wcsClkDn[3], wcsClkUp[3]; //point click and release
-vector <float> cntrlPoints;
+vector <float> plate =
+{
+    -1.1500, 1.5350, 5.1000,
+        -0.9900, 1.5600, 5.1000,
+        -0.7250, 1.4500, 5.1000,
+        -0.7150, 1.3050, 5.1000,
+        -0.3650, 1.2350, 5.1000,
+        -0.0500, 1.2300, 5.1000,
+};
+vector <float> pipe =
+{
+    -0.3350, 1.6850, 5.1000,
+        -0.3150, 1.1700, 5.1000,
+        -0.2800, 0.7600, 5.1000,
+        -0.2750, 0.4750, 5.1000,
+};
+vector <float> vase = { -0.4000, 1.8600, .1000,
+-0.5050, 1.9500, .1000,
+-0.4350, 2.0300, .1000,
+-0.2900, 2.0250, .1000,
+-0.2500, 1.9250, .1000,
+-0.2650, 1.7850, .1000,
+-0.3000, 1.6700, .1000,
+-0.4100, 1.4650, .1000,
+-0.5000, 1.3450, .1000,
+-0.6050, 1.1300, .1000,
+-0.6050, 0.9900, .1000,
+-0.5700, 0.7550, .1000,
+-0.4700, 0.4200, .1000,
+-0.2800, 0.2250, .1000,
+-0.0750, 0.0650, .1000, };
+vector <float> pot = {
+-0.3750, 2.1350, .1000,
+-0.3750, 2.0250, .1000,
+-0.3750, 1.9350, .1000,
+-0.3900, 1.8050, .1000,
+-0.4350, 1.7250, .1000,
+-0.6250, 1.6800, .1000,
+-0.7650, 1.6400, .1000,
+-0.7850, 1.5050, .1000,
+-0.7950, 1.3350, .1000,
+-0.7950, 1.1050, .1000,
+-0.7950, 0.8400, .1000,
+-0.7950, 0.5950, .1000,
+-0.7850, 0.3800, .1000,
+-0.7950, 0.1500, .1000,
+-0.7700, 0.0350, .1000,
+-0.7400, -0.0200, .1000,
+-0.6250, -0.0300, .1000,
+-0.4500, -0.0300, .1000,
+-0.2350, -0.0300, .1000,
+-0.1050, -0.0200, .1000,
+0.0000, 0.0100, .1000 };
+vector <float> bowl = {
+-0.7750, 1.4250, 5.1000,
+-0.8500, 1.4950, 5.1000,
+-0.8100, 1.5600, 5.1000,
+-0.7350, 1.5650, 5.1000,
+-0.6550, 1.5150, 5.1000,
+-0.6550, 1.4400, 5.1000,
+-0.6800, 1.3900, 5.1000,
+-0.7250, 1.3300, 5.1000,
+-0.7600, 1.2300, 5.1000,
+-0.8150, 1.0750, 5.1000,
+-0.8850, 0.8850, 5.1000,
+-0.8850, 0.7150, 5.1000,
+-0.8000, 0.4350, 5.1000,
+-0.6800, 0.2600, 5.1000,
+-0.5050, 0.1150, 5.1000,
+-0.2950, 0.0450, 5.1000,
+-0.0050, 0.0150, 5.1000 };
+vector <float> bowl2 =
+{
+    -0.8550, 1.7550, 5.1000,
+        -0.8350, 1.5300, 5.1000,
+        -0.8550, 1.3250, 5.1000,
+        -0.7900, 1.0950, 5.1000,
+        -0.6350, 1.0200, 5.1000,
+        -0.3700, 1.0200, 5.1000,
+        -0.1150, 1.0200, 5.1000,
+};
+vector <float> gol =
+{ -0.0750, 1.9950, 5.1000,
+-0.8050, 1.9700, 5.1000,
+-1.1550, 1.4650, 5.1000,
+-0.9400, 0.8500, 5.1000,
+-0.4800, 0.6400, 5.1000,
+-0.1700, 0.5300, 5.1000,
+-0.0600, 0.5350, 5.1000 };
+vector <float> lamp_h = {
+-1.0450, 1.3100, 5.1000,
+-0.9950, 1.2300, 5.1000,
+-1.0100, 1.1400, 5.1000,
+-1.1300, 1.1200, 5.1000,
+-1.2600, 1.1950, 5.1000,
+-1.2900, 1.4150, 5.1000,
+-1.2300, 1.6000, 5.1000,
+-0.9250, 1.7150, 5.1000,
+-0.5650, 1.8500, 5.1000,
+-0.3600, 2.0350, 5.1000,
+-0.0650, 2.2900, 5.1000 };
+vector <float> lamp_b = {
+-0.3550, 1.9350, 5.1000,
+-0.3750, 1.8000, 5.1000,
+-0.4750, 1.5650, 5.1000,
+-0.6050, 1.3200, 5.1000,
+-0.6750, 0.9300, 5.1000,
+-0.5400, 0.5500, 5.1000,
+-0.3900, 0.1950, 5.1000,
+-0.1750, 0.0100, 5.1000,
+-0.0050, 0.0150, 5.1000 };
+vector <float> comode =
+{
+    -0.7900, 1.3150, 5.1000,
+        -0.6750, 1.3750, 5.1000,
+        -0.6850, 1.5750, 5.1000,
+        -0.7800, 1.6450, 5.1000,
+        -0.8650, 1.6350, 5.1000,
+        -1.0100, 1.5900, 5.1000,
+        -1.1150, 1.5300, 5.1000,
+        -1.2000, 1.3700, 5.1000,
+        -1.2200, 1.1550, 5.1000,
+        -1.2250, 0.9750, 5.1000,
+        -1.1350, 0.7500, 5.1000,
+        -0.9850, 0.5050, 5.1000,
+        -0.7550, 0.4450, 5.1000,
+        -0.4350, 0.4250, 5.1000,
+        -0.1300, 0.4200, 5.1000,
+        -0.0100, 0.4200, 5.1000,
+};
+vector <float> bin =
+{
+-0.5850, 1.8900, 5.1000,
+-0.5900, 1.5850, 5.1000,
+-0.5850, 1.3650, 5.1000,
+-0.5950, 1.1650, 5.1000,
+-0.5850, 0.9650, 5.1000,
+-0.3650, 0.8900, 5.1000,
+-0.2000, 0.9000, 5.1000,
+-0.0300, 0.9150, 5.1000
+};
+
 vector <float> coordinates;  //je point nilam tar normal nilam etc
 vector <float> normals;
 vector <int> indices; //ebo er jnno
@@ -104,14 +248,17 @@ const double pi = 3.14159265389;
 const int nt = 40; //1/nt kore barbe
 const int ntheta = 20; //360/ntheta kore angle
 bool showControlPoints = true;
-bool loadBezierCurvePoints = false;
+bool loadBezierCurvePoints = true; //false chilo
 bool showHollowBezier = false;
 bool lineMode = false;
 unsigned int bezierVAO;
 
 bool flag = false;
-
-
+bool dflag = false;
+bool tflag = false;
+bool fflag = false;
+bool fflag2 = false;
+bool of = false;
 
 
 
@@ -128,14 +275,7 @@ glm::vec3 V = glm::vec3(.0f, 1.0f, .0f);
 BasicCamera basic_camera(eyeX, eyeY, eyeZ, lookAtX, lookAtY, lookAtZ, V);
 
 
-/*DirectionalLight directionallight1(
-    0.2f, 0.2f, 0.5f,     // ambient
-    5.f, 5.7f, 5.7f,     // diffuse
-    //1.0f, 1.0f, 1.0f,
-    2.0f, 2.0f, 2.0f,        // specular
-   
-    1, 0, 0 //direction
-);*/
+
 
 // positions of the point lights
 glm::vec3 pointLightPositions[] = {
@@ -145,11 +285,12 @@ glm::vec3 pointLightPositions[] = {
     glm::vec3(-1.5f,  2.5f,  5.5f),
     glm::vec3(.0f,  2.5f,  -3.5f),
     glm::vec3(5.5f,  2.5f,  -1.5f),
-/*
-    glm::vec3(1.50f,  2.0f,  3.0f),
-    glm::vec3(-1.5f,  2.0f,  3.0f),
-    glm::vec3(1.5f,  2.0f,  -1.5f),
-    glm::vec3(-1.5f,  2.0f,  -1.5f)*/
+    glm::vec3(7.5f,  2.5f,  5.3f)
+    /*
+        glm::vec3(1.50f,  2.0f,  3.0f),
+        glm::vec3(-1.5f,  2.0f,  3.0f),
+        glm::vec3(1.5f,  2.0f,  -1.5f),
+        glm::vec3(-1.5f,  2.0f,  -1.5f)*/
 };
 PointLight pointlight1(
 
@@ -157,7 +298,7 @@ PointLight pointlight1(
     0.05f, 0.05f, 0.05f,     // ambient
     0.7f, 0.7f, 0.7f,     // diffuse
     //1.0f, 1.0f, 1.0f,
-    1.0f, 1.0f, 1.0f,        // specular
+    .04f, .04f, .04f,        // specular
     1.0f,   //k_c
     0.09f,  //k_l
     0.032f, //k_q
@@ -168,7 +309,7 @@ PointLight pointlight2(
     pointLightPositions[1].x, pointLightPositions[1].y, pointLightPositions[1].z,  // position
     0.05f, 0.05f, 0.05f,     // ambient
     0.7f, 0.7f, 0.7f,       // diffuse
-    1.0f, 1.0f, 1.0f,        // specular
+    .4f, .4f, .4f,        // specular
     1.0f,   //k_c
     0.09f,  //k_l
     0.032f, //k_q
@@ -179,7 +320,7 @@ PointLight pointlight3(
     pointLightPositions[2].x, pointLightPositions[2].y, pointLightPositions[2].z,  // position
     0.05f, 0.05f, 0.05f,     // ambient
     0.7f, 0.7f, 0.7f,       // diffuse
-    1.0f, 1.0f, 1.0f,        // specular
+    .4f, .4f, .4f,        // specular
     1.0f,   //k_c
     0.09f,  //k_l
     0.032f, //k_q
@@ -190,7 +331,7 @@ PointLight pointlight4(
     pointLightPositions[3].x, pointLightPositions[3].y, pointLightPositions[3].z,  // position
     0.05f, 0.05f, 0.05f,     // ambient
     0.7f, 0.7f, 0.7f,       // diffuse
-    1.0f, 1.0f, 1.0f,        // specular
+    .1f, .1f, .1f,        // specular
     1.0f,   //k_c
     0.09f,  //k_l
     0.032f, //k_q
@@ -201,7 +342,7 @@ PointLight pointlight5(
     pointLightPositions[4].x, pointLightPositions[4].y, pointLightPositions[4].z,  // position
     0.05f, 0.05f, 0.05f,     // ambient
     0.7f, 0.7f, 0.7f,       // diffuse
-    1.0f, 1.0f, 1.0f,        // specular
+    .1f, .1f, .1f,        // specular
     1.0f,   //k_c
     0.09f,  //k_l
     0.032f, //k_q
@@ -211,26 +352,34 @@ PointLight pointlight6(
 
     pointLightPositions[5].x, pointLightPositions[5].y, pointLightPositions[5].z,  // position
     0.05f, 0.05f, 0.05f,     // ambient
-    0.7f, 0.7f, 0.7f,       // diffuse
-    1.0f, 1.0f, 1.0f,        // specular
+    0.5f, 0.5f, 0.5f,       // diffuse
+    .1f, .1f, .1f,        // specular
     1.0f,   //k_c
     0.09f,  //k_l
     0.032f, //k_q
     6       // light number
 );
+PointLight pointlight7(
 
+    pointLightPositions[6].x, pointLightPositions[6].y, pointLightPositions[6].z,  // position
+    0.05f, 0.05f, 0.05f,     // ambient
+    1.0f, 1.0f, 1.0f,       // diffuse
+    .05f, .05f, .05f,        // specular
+    1.0f,   //k_c
+    0.09f,  //k_l
+    0.032f, //k_q
+    7      // light number
+);
 
 glm::vec3 spotLightPositions[] = {
     glm::vec3(-1,  1.50f,  0.0f),
-    //glm::vec3(1.5f,  -1.5f,  0.0f),
-    //glm::vec3(-1.5f,  1.5f,  0.0f),
-    //glm::vec3(-1.5f,  -1.5f,  0.0f)
+
 };
 
 
 SpotLight spotlight1(
     spotLightPositions[0].x, spotLightPositions[0].y, spotLightPositions[0].z,  // position
-   .2f, .2f, .2f,     // ambient
+    .2f, .2f, .2f,     // ambient
     1.0f, 1.0f, 1.0f,      // diffuse
     1.0f, 1.0f, 1.0f,        // specular
     1.0f,   //k_c
@@ -270,6 +419,7 @@ int main()
     // glfw window creation
     // --------------------
     GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "CSE 4208: Computer Graphics Laboratory", NULL, NULL);
+    //   GLFWwindow* window = glfwCreateWindow(1000, 700, "CSE 4208: Computer Graphics Laboratory", NULL, NULL);
     if (window == NULL)
     {
         std::cout << "Failed to create GLFW window" << std::endl;
@@ -278,9 +428,8 @@ int main()
     }
     glfwMakeContextCurrent(window);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-    glfwSetKeyCallback(window, key_callback);
     glfwSetCursorPosCallback(window, mouse_callback);
-    glfwSetMouseButtonCallback(window, mouse_button_callback);
+    // glfwSetMouseButtonCallback(window, mouse_button_callback);
     glfwSetScrollCallback(window, scroll_callback);
 
     // tell GLFW to capture our mouse
@@ -304,11 +453,11 @@ int main()
     //Shader lightingShader("vertexShaderForGouraudShading.vs", "fragmentShaderForGouraudShading.fs");
     Shader ourShader("vertexShader.vs", "fragmentShader.fs");
     Shader lightingShaderWithTexture("vertexShaderForPhongShadingWithTexture.vs", "fragmentShaderForPhongShadingWithTexture.fs");
-   
+
     string diffuseMapPath = "floor.png";
     string specularMapPath = "floor_spec.png";
-    
-    
+
+
     unsigned int diffMap = loadTexture(diffuseMapPath.c_str(), GL_REPEAT, GL_REPEAT, GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR);
     unsigned int specMap = loadTexture(specularMapPath.c_str(), GL_REPEAT, GL_REPEAT, GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR);
     Cube cube = Cube(diffMap, specMap, 32.0f, 0.0f, 0.0f, 1.0f, 1.0f); //3ta type cube banano jabe
@@ -323,14 +472,14 @@ int main()
 
 
     string diffuseMapPath3 = "w2.jpg";
-    
+
 
 
     diffMap2 = loadTexture(diffuseMapPath3.c_str(), GL_REPEAT, GL_REPEAT, GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR);
     specMap2 = loadTexture(specularMapPath2.c_str(), GL_REPEAT, GL_REPEAT, GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR);
     Cube cube3 = Cube(diffMap2, specMap2, 32.0f, 0.0f, 0.0f, 1.0f, 1.0f);
 
-    
+
     diffuseMapPath3 = "black.jpg";
     diffMap2 = loadTexture(diffuseMapPath3.c_str(), GL_REPEAT, GL_REPEAT, GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR);
     Cube cube4 = Cube(diffMap2, specMap2, 32.0f, 0.0f, 0.0f, 1.0f, 1.0f);
@@ -368,6 +517,22 @@ int main()
     diffuseMapPath3 = "drawer2.jpg";
     diffMap2 = loadTexture(diffuseMapPath3.c_str(), GL_REPEAT, GL_REPEAT, GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR);
     Cube cube12 = Cube(diffMap2, specMap2, 32.0f, 0.0f, 0.0f, 1.0f, 1.0f);
+
+    diffuseMapPath3 = "name.jpg";
+    diffMap2 = loadTexture(diffuseMapPath3.c_str(), GL_REPEAT, GL_REPEAT, GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR);
+    Cube cube13 = Cube(diffMap2, specMap2, 32.0f, 0.0f, 0.0f, 1.0f, 1.0f);
+
+    diffuseMapPath3 = "wall1.jfif";
+    diffMap2 = loadTexture(diffuseMapPath3.c_str(), GL_REPEAT, GL_REPEAT, GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR);
+    Cube cube14 = Cube(diffMap2, specMap2, 32.0f, 0.0f, 0.0f, 1.0f, 1.0f);
+
+    string diffuseMapPath4 = "fridge.jpg";
+    diffMap2 = loadTexture(diffuseMapPath4.c_str(), GL_REPEAT, GL_REPEAT, GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR);
+    Cube cube15 = Cube(diffMap2, specMap2, 32.0f, 0.0f, 0.0f, 1.0f, 1.0f);
+
+    diffuseMapPath4 = "oven.jpg";
+    diffMap2 = loadTexture(diffuseMapPath4.c_str(), GL_REPEAT, GL_REPEAT, GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR);
+    Cube cube16 = Cube(diffMap2, specMap2, 32.0f, 0.0f, 0.0f, 1.0f, 1.0f);
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
 
@@ -457,12 +622,7 @@ int main()
     glEnableVertexAttribArray(0);
 
 
-    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    
 
-
-    //ourShader.use();
-    //lightingShader.use();
 
     // render loop
     // -----------
@@ -475,7 +635,7 @@ int main()
         else {
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
         }//curve
-        
+
         // per-frame time logic
         // --------------------
         float currentFrame = static_cast<float>(glfwGetTime());
@@ -504,6 +664,9 @@ int main()
         // point light 4
         pointlight4.setUpPointLight(lightingShader);
 
+        pointlight5.setUpPointLight(lightingShader);
+        pointlight6.setUpPointLight(lightingShader);
+
         lightingShaderWithTexture.use();
         lightingShaderWithTexture.setVec3("viewPos", camera.Position);
 
@@ -524,94 +687,27 @@ int main()
         pointlight3.setUpPointLight(lightingShaderWithTexture);
         // point light 4
         pointlight4.setUpPointLight(lightingShaderWithTexture);
-        
+
         pointlight5.setUpPointLight(lightingShaderWithTexture);
         pointlight6.setUpPointLight(lightingShaderWithTexture);
 
-        //curve
-                // activate shader
-       /* lightingShader.use();
+        pointlight7.setUpPointLight(lightingShaderWithTexture);
 
-        // pass projection matrix to shader (note that in this case it could change every frame)
-        projection = glm::ortho(-2.0f, +2.0f, -1.5f, +1.5f, 0.1f, 100.0f);
-        lightingShader.setMat4("projection", projection);
 
-        // camera/view transformation
-        view = camera.GetViewMatrix();
-        lightingShader.setMat4("view", view);
+
 
         // Modelling Transformation*/
         glm::mat4 identityMatrix = glm::mat4(1.0f); // make sure to initialize matrix to identity matrix first
-        glm::mat4 translateMatrix, rotateXMatrix, rotateYMatrix, rotateZMatrix, scaleMatrix,model;
-        translateMatrix = glm::translate(identityMatrix, glm::vec3(translate_X, translate_Y, translate_Z));
-        rotateXMatrix = glm::rotate(identityMatrix, glm::radians(rotateAngle_X), glm::vec3(1.0f, 0.0f, 0.0f));
-        rotateYMatrix = glm::rotate(identityMatrix, glm::radians(rotateAngle_Y), glm::vec3(0.0f, 1.0f, 0.0f));
-        rotateZMatrix = glm::rotate(identityMatrix, glm::radians(rotateAngle_Z), glm::vec3(0.0f, 0.0f, 1.0f));
-        scaleMatrix = glm::scale(identityMatrix, glm::vec3(scale_X, scale_Y, scale_Z));
-        model = translateMatrix * rotateXMatrix * rotateYMatrix * rotateZMatrix * scaleMatrix;
-        lightingShader.setMat4("model", model);
-        if (loadBezierCurvePoints)
-        {
-            bezierVAO = hollowBezier(cntrlPoints.data(), ((unsigned int)cntrlPoints.size() / 3) - 1);
-            loadBezierCurvePoints = false;
-            showHollowBezier = true;
-        }
-        if (showHollowBezier)
-        {
-            lightingShader.use();
-            lightingShader.setVec3("material.ambient", glm::vec3(1.0f, 0.0f, 1.0f));
-            lightingShader.setVec3("material.diffuse", glm::vec3(1.0f, 0.0f, 1.0f));
-            lightingShader.setVec3("material.specular", glm::vec3(1.0f, 1.0f, 1.0f));
-            lightingShader.setFloat("material.shininess", 32.0f);
+        glm::mat4 translateMatrix, rotateXMatrix, rotateYMatrix, rotateZMatrix, scaleMatrix, model;
 
-            glBindVertexArray(bezierVAO);
-            glDrawElements(GL_TRIANGLES,                    // primitive type
-                (unsigned int)indices.size(),          // # of indices
-                GL_UNSIGNED_INT,                 // data type
-                (void*)0);                       // offset to indices
-
-            // unbind VAO
-            glBindVertexArray(0);
-        }
-
-        // drawing control points
-        if (showControlPoints)
-        {
-            ourShader.use();
-            ourShader.setMat4("projection", projection);
-            ourShader.setMat4("view", view);
-            model = glm::mat4(1.0f);
-            ourShader.setMat4("model", model);
-            ourShader.setVec3("color", glm::vec3(1.0f, 0.0f, 1.0f));
-            unsigned int controlPointVAO = drawControlPoints();
-            glBindVertexArray(controlPointVAO);
-            glPointSize(5.0);
-            glDrawArrays(GL_POINTS, 0, (unsigned int)cntrlPoints.size());
-        }
-
-
-
-
-        
-
-
-
-
-
-
-
-
-        // Modelling Transformation TEXTURE
-     // make sure to initialize matrix to identity matrix first
-      
-        translateMatrix = glm::translate(identityMatrix, glm::vec3(3.0-.25, -.02, 5.5));
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(3.0 - .25, -.02, 5.5));
         rotateXMatrix = glm::rotate(identityMatrix, glm::radians(rotateAngle_X), glm::vec3(1.0f, 0.0f, 0.0f));
         rotateYMatrix = glm::rotate(identityMatrix, glm::radians(rotateAngle_Y), glm::vec3(0.0f, 1.0f, 0.0f));
         rotateZMatrix = glm::rotate(identityMatrix, glm::radians(rotateAngle_Z), glm::vec3(0.0f, 0.0f, 1.0f));
         scaleMatrix = glm::scale(identityMatrix, glm::vec3(10.5, 0.03, 10.0));
         model = translateMatrix * rotateXMatrix * rotateYMatrix * rotateZMatrix * scaleMatrix;
 
-        lightingShaderWithTexture.use();
+
         glm::mat4 modelMatrixForContainer = glm::mat4(1.0f);
         modelMatrixForContainer = glm::translate(model, glm::vec3(-0.5f, 1.2f, -1.0f));
         cube.drawCubeWithTexture(lightingShaderWithTexture, modelMatrixForContainer);
@@ -626,22 +722,20 @@ int main()
 
 
 
-        //lightingShaderWithTexture.use();
-        //modelMatrixForContainer = glm::mat4(1.0f);
-        modelMatrixForContainer = glm::translate(model, glm::vec3(-.23f, 3.4f, -10.0f-1.2));
+        modelMatrixForContainer = glm::translate(model, glm::vec3(-.23f, 3.4f, -10.0f - 1.2));
         cube2.drawCubeWithTexture(lightingShaderWithTexture, modelMatrixForContainer);
 
         scaleMatrix = glm::scale(identityMatrix, glm::vec3(.5, 1, .1));
         model = translateMatrix * rotateXMatrix * rotateYMatrix * rotateZMatrix * scaleMatrix;
-        modelMatrixForContainer = glm::translate(model, glm::vec3(3.5f, -.0f, -10.0f-1.2));
+        modelMatrixForContainer = glm::translate(model, glm::vec3(3.5f, -.0f, -10.0f - 1.2));
         cube3.drawCubeWithTexture(lightingShaderWithTexture, modelMatrixForContainer);
 
         model = translateMatrix * rotateXMatrix * rotateYMatrix * rotateZMatrix * scaleMatrix;
-        modelMatrixForContainer = glm::translate(model, glm::vec3(3.5f, 1.0f, -10.0f-1.2));
+        modelMatrixForContainer = glm::translate(model, glm::vec3(3.5f, 1.0f, -10.0f - 1.2));
         cube3.drawCubeWithTexture(lightingShaderWithTexture, modelMatrixForContainer);
 
         model = translateMatrix * rotateXMatrix * rotateYMatrix * rotateZMatrix * scaleMatrix;
-        modelMatrixForContainer = glm::translate(model, glm::vec3(3.5f, 1.40f, -10.0f-1.2));
+        modelMatrixForContainer = glm::translate(model, glm::vec3(3.5f, 1.40f, -10.0f - 1.2));
         cube3.drawCubeWithTexture(lightingShaderWithTexture, modelMatrixForContainer);
 
 
@@ -654,18 +748,18 @@ int main()
         scaleMatrix = glm::scale(identityMatrix, glm::vec3(.05, .6, .6));
         model = translateMatrix * rotateXMatrix * rotateYMatrix * rotateZMatrix * scaleMatrix;
         modelMatrixForContainer = glm::translate(model, glm::vec3(-48.3f, 2.3f, 3.0f));
-       // cube4.drawCubeWithTexture(lightingShaderWithTexture, modelMatrixForContainer);
+        // cube4.drawCubeWithTexture(lightingShaderWithTexture, modelMatrixForContainer);
         cube5.drawCubeWithTexture(lightingShaderWithTexture, modelMatrixForContainer);
 
 
         //pillar
 
-        translateMatrix = glm::translate(identityMatrix, glm::vec3(-2.2, 0,-1.11));
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(-2.2, 0, -1.11));
         scaleMatrix = glm::scale(identityMatrix, glm::vec3(4, 3, .01));
         model = translateMatrix * rotateXMatrix * rotateYMatrix * rotateZMatrix * scaleMatrix;
-        modelMatrixForContainer = glm::translate(model, glm::vec3(0.0f, 0.0f,0));
+        modelMatrixForContainer = glm::translate(model, glm::vec3(0.0f, 0.0f, 0));
         cube6.drawCubeWithTexture(lightingShaderWithTexture, modelMatrixForContainer);
-        
+
         //reception
         translateMatrix = glm::translate(identityMatrix, glm::vec3(-1.3, 0, 2.7));
         scaleMatrix = glm::scale(identityMatrix, glm::vec3(.1, .8, 1.9));
@@ -693,35 +787,61 @@ int main()
 
         //door
         scaleMatrix = glm::scale(identityMatrix, glm::vec3(1.1, 1.8, .05));
-        translateMatrix = glm::translate(identityMatrix, glm::vec3(door+6.3, 0, 1.55)); //x-axis 7
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(door + 6.2, 0, 1.55)); //x-axis 7
         model = translateMatrix * scaleMatrix;
         modelMatrixForContainer = glm::translate(model, glm::vec3(.0f, 0.0f, 0));
         cube11.drawCubeWithTexture(lightingShaderWithTexture, modelMatrixForContainer);  //press E to move door
-        
-
-
-      
-
-
-        
-        if(dLight)
-        { 
-        lightingShader.setBool("dlighton", true);
-        lightingShader.setVec3("directionalLight.direction", .5, 3.0, -3.0);
-        lightingShader.setVec3("directionalLight.ambient", .2, .2, .2);
-        lightingShader.setVec3("directionalLight.diffuse", .8, .8, 0.8);
-        lightingShader.setVec3("directionalLight.specular", 1.0, 1.0, 1.0);
+        if (dflag)
+        {
+            if (door < .76)
+                door += .02;
         }
-     
+        if (!dflag)
+        {
+            if (door > 0.0f)
+                door -= .02;
+        }
+
+        //fridge
+        scaleMatrix = glm::scale(identityMatrix, glm::vec3(1.1, 1.58, .02));
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(4.88, .195, -3.52));
+        model = translateMatrix * scaleMatrix;
+        modelMatrixForContainer = glm::translate(model, glm::vec3(.0f, 0.0f, 0));
+        cube15.drawCubeWithTexture(lightingShaderWithTexture, modelMatrixForContainer);
+
+        //oven
+        scaleMatrix = glm::scale(identityMatrix, glm::vec3(.6, .399, .03));
+        rotateYMatrix = glm::rotate(identityMatrix, glm::radians(fr), glm::vec3(0.f, 1.0f, 0.0f));
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(3.12, 1 - .3 + .05, -4.23 + .4));
+        model = translateMatrix * rotateYMatrix * scaleMatrix;
+        modelMatrixForContainer = glm::translate(model, glm::vec3(.0f, 0.0f, 0));
+        cube16.drawCubeWithTexture(lightingShaderWithTexture, modelMatrixForContainer);
+        if (of)
+        {
+            fr = -86.0f;
+        }
+        else
+        {
+            if (fr != 0.0f)
+                fr = 0.0f;
+        }
+
+
+
+        if (dLight)
+        {
+            lightingShader.setBool("dlighton", true);
+            lightingShader.setVec3("directionalLight.direction", .5, 3.0, -3.0);
+            lightingShader.setVec3("directionalLight.ambient", .2, .2, .2);
+            lightingShader.setVec3("directionalLight.diffuse", .8, .8, 0.8);
+            lightingShader.setVec3("directionalLight.specular", 1.0, 1.0, 1.0);
+        }
+
 
         spotlight1.setUpspotLight(lightingShader);
-       // directionallight1.setUpDirectionalLight(lightingShader);
-        // activate shader
+        // directionallight1.setUpDirectionalLight(lightingShader);
+         // activate shader
         lightingShader.use();
-
-        // pass projection matrix to shader (note that in this case it could change every frame)
-     //glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-           //glm::mat4 projection = glm::ortho(-2.0f, +2.0f, -1.5f, +1.5f, 0.1f, 100.0f);
         lightingShader.setMat4("projection", projection);
 
         // camera/view transformation
@@ -729,21 +849,32 @@ int main()
         //glm::mat4 view = basic_camera.createViewMatrix();
         lightingShader.setMat4("view", view);
 
-        // Modelling Transformation
-       // glm::mat4 identityMatrix = glm::mat4(1.0f); // make sure to initialize matrix to identity matrix first
-        
+
+
+
+        //sphere
         Sphere sphere = Sphere();
-        
+
         glm::vec3 amb = glm::vec3(1.0f, 1.0f, 1.0f);
         glm::vec3 diff = glm::vec3(.1f, .1f, 0.1f);
         glm::vec3 spec = glm::vec3(0.5f, 0.5f, 0.5f);
-        Sphere sphere1 = Sphere(.2,36,18,amb,diff,spec);
+        Sphere sphere1 = Sphere(.2, 36, 18, amb, diff, spec);
 
 
-         amb = glm::vec3(1.0f, 1.0f, 1.0f);
-         diff = glm::vec3(1.0f, 1.0f, 1.0f);
-         spec = glm::vec3(0.5f, 0.5f, 0.5f);
-         Sphere sphere2 = Sphere(.2, 36, 18, amb, diff, spec);
+        amb = glm::vec3(1.0f, 1.0f, 1.0f);
+        diff = glm::vec3(1.0f, 1.0f, 1.0f);
+        spec = glm::vec3(0.5f, 0.5f, 0.5f);
+        Sphere sphere2 = Sphere(.2, 36, 18, amb, diff, spec);
+        //.154 * 4.5, .231 * 4.5, .246 * 4.5
+        amb = glm::vec3(.154 * 1.5, .231 * 1.5, .246 * 1.5);
+        diff = glm::vec3(.154 * 3.5, .231 * 3.5, .246 * 3.5);
+        spec = glm::vec3(0.5f, 0.5f, 0.5f);
+        Sphere sph = Sphere(.2, 36, 18, amb, diff, spec);
+        amb = glm::vec3(.1, .1, .1);
+        diff = glm::vec3(0, 0, 0);
+        spec = glm::vec3(0.5f, 0.5f, 0.5f);
+        Sphere flash = Sphere(.2, 36, 18, amb, diff, spec);
+
         translateMatrix = glm::translate(identityMatrix, glm::vec3(0, 0, 0));
         rotateXMatrix = glm::rotate(identityMatrix, glm::radians(rotateAngle_X), glm::vec3(1.0f, 0.0f, 0.0f));
         rotateYMatrix = glm::rotate(identityMatrix, glm::radians(rotateAngle_Y), glm::vec3(0.0f, 1.0f, 0.0f));
@@ -751,22 +882,18 @@ int main()
         scaleMatrix = glm::scale(identityMatrix, glm::vec3(1, 1, 1));
         model = translateMatrix * rotateXMatrix * rotateYMatrix * rotateZMatrix * scaleMatrix;
         glm::mat4 modelForSphere = glm::mat4(1.0f);
-       // modelForSphere = glm::translate(model, glm::vec3(1.5f, 1.2f, 0.5f));
+        // modelForSphere = glm::translate(model, glm::vec3(1.5f, 1.2f, 0.5f));
         modelForSphere = glm::translate(model, glm::vec3(2.0f, 1.0f, 1.0f));
-       // sphere1.drawSphere(lightingShader, modelForSphere);
-       
-       
-       
-       
-       
-       
-       //pillers
-        translateMatrix = glm::translate(identityMatrix, glm::vec3(translate_X, translate_Y, translate_Z-1.1));
+        // sphere1.drawSphere(lightingShader, modelForSphere);
+
+
+        //pillers
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(translate_X, translate_Y, translate_Z - 1.1));
         rotateXMatrix = glm::rotate(identityMatrix, glm::radians(rotateAngle_X), glm::vec3(1.0f, 0.0f, 0.0f));
         rotateYMatrix = glm::rotate(identityMatrix, glm::radians(rotateAngle_Y), glm::vec3(0.0f, 1.0f, 0.0f));
         rotateZMatrix = glm::rotate(identityMatrix, glm::radians(rotateAngle_Z), glm::vec3(0.0f, 0.0f, 1.0f));
-        scaleMatrix= glm::scale(identityMatrix, glm::vec3(.05, 2.4, .05));
-        model= translateMatrix * rotateXMatrix * rotateYMatrix * rotateZMatrix * scaleMatrix;
+        scaleMatrix = glm::scale(identityMatrix, glm::vec3(.05, 2.4, .05));
+        model = translateMatrix * rotateXMatrix * rotateYMatrix * rotateZMatrix * scaleMatrix;
         lightingShader.setMat4("model", model);
         drawCube(cubeVAO, lightingShader, model, 0.1, 0.1, 0.1);
         translateMatrix = glm::translate(identityMatrix, glm::vec3(.2, translate_Y, translate_Z - 1.1));
@@ -842,8 +969,8 @@ int main()
         lightingShader.setMat4("model", model);
         drawCube(cubeVAO, lightingShader, model, 0.1, 0.1, 0.1);
 
-     
- 
+
+
 
 
 
@@ -857,13 +984,13 @@ int main()
         lightingShader.setMat4("model", model);
 
         table(cubeVAO, lightingShader, model);
-        
+
 
         translateMatrix = glm::translate(identityMatrix, glm::vec3(2.0, translate_Y, 2.0));
         rotateXMatrix = glm::rotate(identityMatrix, glm::radians(0.0f), glm::vec3(1.0f, 0.0f, 0.0f));
         rotateYMatrix = glm::rotate(identityMatrix, glm::radians(rotateAngle_Y), glm::vec3(0.0f, 1.0f, 0.0f));
         rotateZMatrix = glm::rotate(identityMatrix, glm::radians(0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        model = translateMatrix * rotateYMatrix  * scaleMatrix;
+        model = translateMatrix * rotateYMatrix * scaleMatrix;
         table(cubeVAO, lightingShader, model);
 
         translateMatrix = glm::translate(identityMatrix, glm::vec3(0., translate_Y, 2.0));
@@ -872,7 +999,7 @@ int main()
 
         translateMatrix = glm::translate(identityMatrix, glm::vec3(0., translate_Y, 4.0));
         model = translateMatrix * rotateYMatrix * scaleMatrix;
-       table(cubeVAO, lightingShader, model);
+        table(cubeVAO, lightingShader, model);
 
         translateMatrix = glm::translate(identityMatrix, glm::vec3(4.0, translate_Y, 0.0));
         model = translateMatrix * rotateYMatrix * scaleMatrix;
@@ -880,7 +1007,7 @@ int main()
 
         translateMatrix = glm::translate(identityMatrix, glm::vec3(2.0, translate_Y, 4.0));
         model = translateMatrix * rotateYMatrix * scaleMatrix;
-       table(cubeVAO, lightingShader, model);
+        table(cubeVAO, lightingShader, model);
 
         translateMatrix = glm::translate(identityMatrix, glm::vec3(4.0, translate_Y, 2.0));
         model = translateMatrix * rotateYMatrix * scaleMatrix;
@@ -888,7 +1015,16 @@ int main()
 
         translateMatrix = glm::translate(identityMatrix, glm::vec3(4.0, translate_Y, 4.0));
         model = translateMatrix * rotateYMatrix * scaleMatrix;
-       table(cubeVAO, lightingShader, model);
+        table(cubeVAO, lightingShader, model);
+
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(3.1, translate_Y, -3.8));
+        scaleMatrix = glm::scale(identityMatrix, glm::vec3(.7, 1.4, 1.2));
+        model = translateMatrix * scaleMatrix;
+        lightingShader.setMat4("model", model);
+
+        table(cubeVAO, lightingShader, model);
+
+
 
         //chair
 
@@ -900,7 +1036,7 @@ int main()
         scaleMatrix = glm::scale(identityMatrix, glm::vec3(scale_X, scale_Y, scale_Z));
         model = translateMatrix * rotateXMatrix * rotateYMatrix * rotateZMatrix * scaleMatrix;
         lightingShader.setMat4("model", model);
-        chair(cubeVAO, lightingShader, model);        
+        chair(cubeVAO, lightingShader, model);
 
 
         translateMatrix = glm::translate(identityMatrix, glm::vec3(.5, translate_Y, .15));
@@ -979,13 +1115,13 @@ int main()
         lightingShader.setMat4("model", model);
         chair(cubeVAO, lightingShader, model);
 
-        translateMatrix = glm::translate(identityMatrix, glm::vec3(translate_X+.3, translate_Y, translate_Z-.6));
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(translate_X + .3, translate_Y, translate_Z - .6));
         rotateYMatrix = glm::rotate(identityMatrix, glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
         model = translateMatrix * rotateXMatrix * rotateYMatrix * rotateZMatrix * scaleMatrix;
         lightingShader.setMat4("model", model);
         chair(cubeVAO, lightingShader, model);
 
-        translateMatrix = glm::translate(identityMatrix, glm::vec3(translate_X + .3+.5, translate_Y, translate_Z - .6));
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(translate_X + .3 + .5, translate_Y, translate_Z - .6));
         model = translateMatrix * rotateXMatrix * rotateYMatrix * rotateZMatrix * scaleMatrix;
         lightingShader.setMat4("model", model);
         chair(cubeVAO, lightingShader, model);
@@ -998,7 +1134,7 @@ int main()
         chair(cubeVAO, lightingShader, model);
 
 
-        translateMatrix = glm::translate(identityMatrix, glm::vec3(translate_X + .3 + .5, translate_Y, -.7+ 2.15));
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(translate_X + .3 + .5, translate_Y, -.7 + 2.15));
         model = translateMatrix * rotateXMatrix * rotateYMatrix * rotateZMatrix * scaleMatrix;
         lightingShader.setMat4("model", model);
         chair(cubeVAO, lightingShader, model);
@@ -1008,7 +1144,7 @@ int main()
         lightingShader.setMat4("model", model);
         chair(cubeVAO, lightingShader, model);
 
-        translateMatrix = glm::translate(identityMatrix, glm::vec3(+.3+.5, translate_Y, -.7 + 4.15));
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(+.3 + .5, translate_Y, -.7 + 4.15));
         model = translateMatrix * rotateXMatrix * rotateYMatrix * rotateZMatrix * scaleMatrix;
         lightingShader.setMat4("model", model);
         chair(cubeVAO, lightingShader, model);
@@ -1075,12 +1211,6 @@ int main()
 
 
 
-
-
-
-
-
-      
         //floor
         glm::mat4 translate = glm::mat4(1.0f);
         //translate = glm::translate(model, glm::vec3(-0.5, 0, -0.5));
@@ -1089,10 +1219,10 @@ int main()
         rotateYMatrix = glm::rotate(identityMatrix, glm::radians(.0f), glm::vec3(0.0f, 1.0f, 0.0f));
         rotateZMatrix = glm::rotate(identityMatrix, glm::radians(.0f), glm::vec3(0.0f, 0.0f, 1.0f));
         translateMatrix = glm::translate(identityMatrix, glm::vec3(-2.5, translate_Y, -4.5));
-        model = translateMatrix* rotateXMatrix * rotateYMatrix * rotateZMatrix * scaleMatrix;
+        model = translateMatrix * rotateXMatrix * rotateYMatrix * rotateZMatrix * scaleMatrix;
         lightingShader.setMat4("model", model);
         drawCube(cubeVAO, lightingShader, model, 0.99, 0.99, 1.0);
-        
+
 
         //wall
         //left
@@ -1100,13 +1230,13 @@ int main()
         scaleMatrix = glm::scale(identityMatrix, glm::vec3(.1, 3.1, 10.0));
 
         translateMatrix = glm::translate(identityMatrix, glm::vec3(-2.5, translate_Y, -4.5));
-        model = translateMatrix * scaleMatrix ;
+        model = translateMatrix * scaleMatrix;
         lightingShader.setMat4("model", model);
         drawCube(cubeVAO, lightingShader, model, .1, .1, .6);
         //right
         scaleMatrix = glm::scale(identityMatrix, glm::vec3(.1, 3.1, 10.0));
         translateMatrix = glm::translate(identityMatrix, glm::vec3(8.0, translate_Y, -4.5));
-        model = translateMatrix*rotateXMatrix * rotateYMatrix * rotateZMatrix * scaleMatrix;
+        model = translateMatrix * rotateXMatrix * rotateYMatrix * rotateZMatrix * scaleMatrix;
         lightingShader.setMat4("model", model);
         drawCube(cubeVAO, lightingShader, model, .1, .1, .6);
         //back
@@ -1118,7 +1248,7 @@ int main()
         //roof
         scaleMatrix = glm::scale(identityMatrix, glm::vec3(10.5, 0.05, 10.0));
         translateMatrix = glm::translate(identityMatrix, glm::vec3(-2.5, 3.05, -4.5));
-        model = translateMatrix* rotateXMatrix * rotateYMatrix * rotateZMatrix * scaleMatrix;
+        model = translateMatrix * rotateXMatrix * rotateYMatrix * rotateZMatrix * scaleMatrix;
         lightingShader.setMat4("model", model);
         drawCube(cubeVAO, lightingShader, model, 0.1, 0.5, .9);
 
@@ -1129,11 +1259,15 @@ int main()
         rotateXMatrix = glm::rotate(identityMatrix, glm::radians(0.0f), glm::vec3(1.0f, 0.0f, 0.0f));
         rotateYMatrix = glm::rotate(identityMatrix, glm::radians(.0f), glm::vec3(0.0f, 1.0f, 0.0f));
         rotateZMatrix = glm::rotate(identityMatrix, glm::radians(.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        translateMatrix = glm::translate(identityMatrix, glm::vec3(5.5+.4, translate_Y, 4.5));
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(5.5 + .4, translate_Y, 4.5));
         model = translateMatrix * rotateXMatrix * rotateYMatrix * rotateZMatrix * scaleMatrix;
         lightingShader.setMat4("model", model);
         drawCube(cubeVAO, lightingShader, model, 0.99, 0.99, 1.0);
 
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(5.5 + .4, translate_Y, 4.55));
+        model = translateMatrix * rotateXMatrix * rotateYMatrix * rotateZMatrix * scaleMatrix;
+        modelMatrixForContainer = glm::translate(model, glm::vec3(.0f, 0.0f, 0));
+        cube14.drawCubeWithTexture(lightingShaderWithTexture, modelMatrixForContainer);
 
         scaleMatrix = glm::scale(identityMatrix, glm::vec3(1.1, 3.1, .05));
         translateMatrix = glm::translate(identityMatrix, glm::vec3(5.5 + .4, translate_Y, 1.5));
@@ -1142,7 +1276,7 @@ int main()
         drawCube(cubeVAO, lightingShader, model, 0.99, 0.99, 1.0);
 
         scaleMatrix = glm::scale(identityMatrix, glm::vec3(1.1, 1.3, .05));
-        translateMatrix = glm::translate(identityMatrix, glm::vec3(6.5 + .4,1.8, 1.5));
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(6.5 + .4, 1.8, 1.5));
         model = translateMatrix * scaleMatrix;
         lightingShader.setMat4("model", model);
         drawCube(cubeVAO, lightingShader, model, 0.99, 0.99, 1.0);
@@ -1154,7 +1288,7 @@ int main()
         drawCube(cubeVAO, lightingShader, model, 0.99, 0.99, 1.0);
 
         //doorFrame
-        scaleMatrix = glm::scale(identityMatrix, glm::vec3(.06, 1.8,.06 ));
+        scaleMatrix = glm::scale(identityMatrix, glm::vec3(.06, 1.8, .06));
         translateMatrix = glm::translate(identityMatrix, glm::vec3(7.9, 0, 1.5));
         model = translateMatrix * scaleMatrix;
         lightingShader.setMat4("model", model);
@@ -1169,29 +1303,84 @@ int main()
 
         //holder
 
+
+
+
+
+        amb = glm::vec3(.1, .1, .1);
+        diff = glm::vec3(0, .5, .1);
+        spec = glm::vec3(0.5f, 0.5f, 0.5f);
+        Sphere f2 = Sphere(.2, 36, 18, amb, diff, spec);
+
+
+
+
         translateMatrix = glm::translate(identityMatrix, glm::vec3(0, 2.65, 0));
-        model = translateMatrix* rotateXMatrix * rotateYMatrix * rotateZMatrix;
-        fan_holder(cubeVAO, lightingShader, model);
-
-        translateMatrix = glm::translate(identityMatrix, glm::vec3(.5, 2.65, 2.0));
         model = translateMatrix * rotateXMatrix * rotateYMatrix * rotateZMatrix;
-        //fan_holder(cubeVAO, lightingShader, model);
+        fan_holder(cubeVAO, lightingShader, model, f2);
 
-        
-       // translate = glm::translate(identityMatrix, glm::vec3(1, 2.66, 0));
-        translateMatrix = glm::translate(identityMatrix, glm::vec3(0, 2.66, 0));
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(0, 2.65, 3.1));
+        model = translateMatrix * rotateXMatrix * rotateYMatrix * rotateZMatrix;
+        fan_holder(cubeVAO, lightingShader, model, f2);
+
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(4, 2.65, 0));
+        model = translateMatrix * rotateXMatrix * rotateYMatrix * rotateZMatrix;
+        fan_holder(cubeVAO, lightingShader, model, f2);
+
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(4, 2.65, 3.1));
+        model = translateMatrix * rotateXMatrix * rotateYMatrix * rotateZMatrix;
+        fan_holder(cubeVAO, lightingShader, model, f2);
+
+        // translate = glm::translate(identityMatrix, glm::vec3(1, 2.66, 0));
+        // translateMatrix = glm::translate(identityMatrix, glm::vec3(0, 0, 0));
+
         rotateYMatrix = glm::rotate(identityMatrix, glm::radians(r), glm::vec3(0.0f, 1.0f, 0.0f));
-        if (fanSwitch == true)
-        {
-            r += 0.2f;
-        }
-        else r = 0.0f;
-            
-        model = translateMatrix * rotateYMatrix ;
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(0, 0, 0));
+        model = rotateYMatrix * translateMatrix;
+        fan(cubeVAO, lightingShader, model);
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(0, 0, 3.1));
+        rotateYMatrix = translateMatrix * glm::rotate(identityMatrix, glm::radians(r), glm::vec3(0.0f, 1.0f, 0.0f)) * glm::translate(identityMatrix, glm::vec3(0, 0, -3.10));
+        model = rotateYMatrix * translateMatrix;
         fan(cubeVAO, lightingShader, model);
 
-        kitchen(cubeVAO,lightingShader, lightingShaderWithTexture,cube9, sphere1);
-        basin(cubeVAO,lightingShader, sphere1, sphere2);
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(4, 0, 0));
+        rotateYMatrix = translateMatrix * glm::rotate(identityMatrix, glm::radians(r), glm::vec3(0.0f, 1.0f, 0.0f)) * glm::translate(identityMatrix, glm::vec3(-4.0, 0, 0));
+        model = rotateYMatrix * translateMatrix;
+        fan(cubeVAO, lightingShader, model);
+
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(4, 0, 3.1));
+        rotateYMatrix = translateMatrix * glm::rotate(identityMatrix, glm::radians(r), glm::vec3(0.0f, 1.0f, 0.0f)) * glm::translate(identityMatrix, glm::vec3(-4, 0, -3.10));
+        model = rotateYMatrix * translateMatrix;
+        fan(cubeVAO, lightingShader, model); //press p
+        if (fanSwitch)
+        {
+            r += 30.0;
+        }
+        else
+        {
+            r = 0.0f;
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        kitchen(cubeVAO, lightingShader, lightingShaderWithTexture, cube9, sphere1);
+        basin(cubeVAO, lightingShader, sphere1, sphere2);
 
         amb = glm::vec3(1.0f, 1.0f, 1.0f);
         diff = glm::vec3(.2f, .2f, .2f);
@@ -1199,56 +1388,347 @@ int main()
         Sphere sphere3 = Sphere(1, 36, 18, amb, diff, spec);
         stove(cubeVAO, lightingShader, sphere3);
 
-        //drawer
-
-    
-       
+        //drawer  
         scaleMatrix = glm::scale(identityMatrix, glm::vec3(.04, .3, .7));
-        translateMatrix = glm::translate(identityMatrix, glm::vec3(0.01, .7-.33,z_move1 -1.82));
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(0.01, .7 - .33, z_move1 - 1.82));
         model = translateMatrix * scaleMatrix;
         drawCube(cubeVAO, lightingShader, model, .1, .1, .1);
 
-        translateMatrix = glm::translate(identityMatrix, glm::vec3(1.5-.05, .7-.33, z_move1 - 1.82));
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(1.5 - .05, .7 - .33, z_move1 - 1.82));
         model = translateMatrix * scaleMatrix;
         drawCube(cubeVAO, lightingShader, model, .1, .1, .1);
 
-        scaleMatrix = glm::scale(identityMatrix, glm::vec3(1.5, .01, .7));
-        translateMatrix = glm::translate(identityMatrix, glm::vec3(0, .7 - .33 , z_move1 - 1.82));
+        scaleMatrix = glm::scale(identityMatrix, glm::vec3(1.45, .01, .7));
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(0, .7 - .33, z_move1 - 1.82));
         model = translateMatrix * scaleMatrix;
         drawCube(cubeVAO, lightingShader, model, .1, .1, .1);
 
         scaleMatrix = glm::scale(identityMatrix, glm::vec3(1.5, .3, .04));
-        translateMatrix = glm::translate(identityMatrix, glm::vec3(0, .7-.33, z_move1-1.85));
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(0, .7 - .33, z_move1 - 1.85));
         model = translateMatrix * scaleMatrix;
         modelMatrixForContainer = glm::translate(model, glm::vec3(.0f, 0.0f, 0));
         cube12.drawCubeWithTexture(lightingShaderWithTexture, modelMatrixForContainer);
 
         //drawer2
         scaleMatrix = glm::scale(identityMatrix, glm::vec3(.04, .3, .7));
-        translateMatrix = glm::translate(identityMatrix, glm::vec3(0.01, .7 - .33-.33, z_move2 - 1.82));
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(0.01, .7 - .33 - .33, z_move2 - 1.82));
         model = translateMatrix * scaleMatrix;
         drawCube(cubeVAO, lightingShader, model, .1, .1, .1);
 
-        translateMatrix = glm::translate(identityMatrix, glm::vec3(1.5 - .05, .7 - .33-.32, z_move2 - 1.82));
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(1.5 - .05, .7 - .33 - .32, z_move2 - 1.82));
         model = translateMatrix * scaleMatrix;
         drawCube(cubeVAO, lightingShader, model, .1, .1, .1);
 
-        scaleMatrix = glm::scale(identityMatrix, glm::vec3(1.5, .01, .7));
+        scaleMatrix = glm::scale(identityMatrix, glm::vec3(1.45, .01, .7));
         translateMatrix = glm::translate(identityMatrix, glm::vec3(0, .7 - .33 - .32, z_move2 - 1.82));
         model = translateMatrix * scaleMatrix;
         drawCube(cubeVAO, lightingShader, model, .1, .1, .1);
 
         scaleMatrix = glm::scale(identityMatrix, glm::vec3(1.5, .3, .04));
-        translateMatrix = glm::translate(identityMatrix, glm::vec3(0, .7 - .33-.33, z_move2 - 1.85));
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(0, .7 - .33 - .33, z_move2 - 1.85));
         model = translateMatrix * scaleMatrix;
         modelMatrixForContainer = glm::translate(model, glm::vec3(.0f, 0.0f, 0));
-        cube12.drawCubeWithTexture(lightingShaderWithTexture, modelMatrixForContainer);
-
-        //press q,w to open drawer
+        cube12.drawCubeWithTexture(lightingShaderWithTexture, modelMatrixForContainer); //press q,w to open drawer
 
 
+        //tap
+        scaleMatrix = glm::scale(identityMatrix, glm::vec3(.015, tap_w + .06f, .015));
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(7.8, 1, -1.076));
+        model = translateMatrix * scaleMatrix;
+        drawCube(cubeVAO, lightingShader, model, .154 * 4.5, .231 * 4.5, .246 * 4.5);
 
-    
+        scaleMatrix = glm::scale(identityMatrix, glm::vec3(.02, tap_w + .06f, .02));
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(-1.87, 1.05, -1.7));
+        model = translateMatrix * scaleMatrix;
+        drawCube(cubeVAO, lightingShader, model, .154 * 4.5, .231 * 4.5, .246 * 4.5);//press T
+
+        if (tflag)
+        {
+            if (tap_w > -.3)
+            {
+                tap_w -= .01;
+            }
+
+        }
+        if (!tflag)
+        {
+            if (tap_w < 0.0f)
+            {
+                tap_w = 0;
+            }
+
+        }
+
+        //fridge
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(4.87, 0, -4.3));
+
+        model = translateMatrix * scaleMatrix;
+        fridge(cubeVAO, lightingShader, sphere, translateMatrix);
+
+
+        //handles
+
+        scaleMatrix = glm::scale(identityMatrix, glm::vec3(.545, 1.77, .02));
+        rotateYMatrix = glm::rotate(identityMatrix, glm::radians(frotate), glm::vec3(0.0f, 1.0f, 0.0f));
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(4.875, 0, -4.3 + .8));
+        model = translateMatrix * rotateYMatrix * scaleMatrix;
+        drawCube(cubeVAO, lightingShader, model, .01, .01, .01);
+        //change=glm::rotate(identityMatrix, glm::radians(frotate2), glm::vec3(0.f, 1.0f, 0.0f));
+        rotateYMatrix = glm::rotate(identityMatrix, glm::radians(frotate2), glm::vec3(0.f, 1.0f, 0.0f));
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(4.87 + 1.13, 0, -4.3 + .81));
+        model = change * translateMatrix * glm::rotate(identityMatrix, glm::radians(180.f), glm::vec3(0.f, 1.0f, 0.0f)) * rotateYMatrix * scaleMatrix;
+        drawCube(cubeVAO, lightingShader, model, .01, .01, .01);
+        if (fflag)
+        {
+            frotate = -86.1f;
+        }
+        if (!fflag)
+        {
+            if (frotate != 0.0f)
+                frotate = 0.0f;
+        }
+        if (fflag2)
+        {
+
+            frotate2 = 86.1f;
+        }
+        if (!fflag2)
+        {
+            if (frotate2 != 0.0f)
+                frotate2 = 0.0f;
+        }
+        //logo
+        scaleMatrix = glm::scale(identityMatrix, glm::vec3(.03, .8, 1.1));
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(-2.4, 1.8, 3.3));
+        model = translateMatrix * scaleMatrix;
+        modelMatrixForContainer = glm::translate(model, glm::vec3(.0f, 0.0f, 0));
+        cube13.drawCubeWithTexture(lightingShaderWithTexture, modelMatrixForContainer);
+
+
+        //curve
+        lightingShader.use();
+
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(-1.9, -.1, -.75));
+        rotateXMatrix = glm::rotate(identityMatrix, glm::radians(rotateAngle_X), glm::vec3(1.0f, 0.0f, 0.0f));
+        rotateYMatrix = glm::rotate(identityMatrix, glm::radians(0.f), glm::vec3(0.0f, 1.0f, 0.0f));
+        rotateZMatrix = glm::rotate(identityMatrix, glm::radians(rotateAngle_Z), glm::vec3(0.0f, 0.0f, 1.0f));
+        scaleMatrix = glm::scale(identityMatrix, glm::vec3(.4, scale_Y * .5, .4));
+        model = translateMatrix * rotateXMatrix * rotateYMatrix * rotateZMatrix * scaleMatrix;
+        lightingShader.setMat4("model", model);
+        bezierVAO = hollowBezier(vase.data(), ((unsigned int)vase.size() / 3) - 1);
+        lightingShader.use();
+        lightingShader.setVec3("material.ambient", glm::vec3(.2f, .2f, .2f));
+        lightingShader.setVec3("material.diffuse", glm::vec3(1.0f, 0.5f, 1.0f));
+        lightingShader.setVec3("material.specular", glm::vec3(.7f, .7f, .7f));
+        lightingShader.setFloat("material.shininess", 32.0f);
+        glBindVertexArray(bezierVAO);
+        glDrawElements(GL_TRIANGLES,                    // primitive type
+            (unsigned int)indices.size(),          // # of indices
+            GL_UNSIGNED_INT,                 // data type
+            (void*)0);                       // offset to indices
+
+
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(-1.9, 2, -2.75));
+        scaleMatrix = glm::scale(identityMatrix, glm::vec3(.2, scale_Y * .2, .2));
+        model = translateMatrix * scaleMatrix;
+        lightingShader.setMat4("model", model);
+        bezierVAO = hollowBezier(bowl.data(), ((unsigned int)bowl.size() / 3) - 1);
+        lightingShader.use();
+        lightingShader.setVec3("material.ambient", glm::vec3(1.0f, 1.0f, 1.0f));
+        lightingShader.setVec3("material.diffuse", glm::vec3(1.0f, 0.5f, .0f));
+        lightingShader.setVec3("material.specular", glm::vec3(1, 1, 1));
+        lightingShader.setFloat("material.shininess", 32.0f);
+        glBindVertexArray(bezierVAO);
+        glDrawElements(GL_TRIANGLES,                    // primitive type
+            (unsigned int)indices.size(),          // # of indices
+            GL_UNSIGNED_INT,                 // data type
+            (void*)0);                       // offset to indices
+
+
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(-1.9, 2, -3.25));
+        scaleMatrix = glm::scale(identityMatrix, glm::vec3(.2, scale_Y * .3, .2));
+        model = translateMatrix * scaleMatrix;
+        lightingShader.setMat4("model", model);
+        bezierVAO = hollowBezier(bowl.data(), ((unsigned int)bowl.size() / 3) - 1);
+        lightingShader.use();
+        lightingShader.setVec3("material.diffuse", glm::vec3(.5f, 1.5f, .0f));
+        glBindVertexArray(bezierVAO);
+        glDrawElements(GL_TRIANGLES,                    // primitive type
+            (unsigned int)indices.size(),          // # of indices
+            GL_UNSIGNED_INT,                 // data type
+            (void*)0);                       // offset to indices
+        // unbind VAO
+
+
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(-1.9, .9, -4.0));
+        scaleMatrix = glm::scale(identityMatrix, glm::vec3(.2, scale_Y * .1, .4));
+        model = translateMatrix * scaleMatrix;
+        lightingShader.setMat4("model", model);
+        bezierVAO = hollowBezier(bowl.data(), ((unsigned int)bowl.size() / 3) - 1);
+        lightingShader.use();
+        lightingShader.setVec3("material.diffuse", glm::vec3(.8f, .5f, .4f));
+        glBindVertexArray(bezierVAO);
+        glDrawElements(GL_TRIANGLES,                    // primitive type
+            (unsigned int)indices.size(),          // # of indices
+            GL_UNSIGNED_INT,                 // data type
+            (void*)0);
+
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(.56, .74, -1.5));
+        scaleMatrix = glm::scale(identityMatrix, glm::vec3(.2, scale_Y * .05, .2));
+        model = translateMatrix * scaleMatrix;
+        lightingShader.setMat4("model", model);
+        bezierVAO = hollowBezier(bowl.data(), ((unsigned int)bowl.size() / 3) - 1);
+        lightingShader.use();
+        lightingShader.setVec3("material.diffuse", glm::vec3(.8f, .01f, .01f));
+        glBindVertexArray(bezierVAO);
+        glDrawElements(GL_TRIANGLES,                    // primitive type
+            (unsigned int)indices.size(),          // # of indices
+            GL_UNSIGNED_INT,                 // data type
+            (void*)0);
+
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(7.56, -.3, -1.7));
+        scaleMatrix = glm::scale(identityMatrix, glm::vec3(.3, scale_Y * .4, .3));
+        model = translateMatrix * scaleMatrix;
+        lightingShader.setMat4("model", model);
+        bezierVAO = hollowBezier(bin.data(), ((unsigned int)bin.size() / 3) - 1);
+        lightingShader.use();
+        lightingShader.setVec3("material.diffuse", glm::vec3(0.545, 0.271, 0.075));
+        glBindVertexArray(bezierVAO);
+        glDrawElements(GL_TRIANGLES,                    // primitive type
+            (unsigned int)indices.size(),          // # of indices
+            GL_UNSIGNED_INT,                 // data type
+            (void*)0);
+
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(0.3, .081, -0.2));
+        scaleMatrix = glm::scale(identityMatrix, glm::vec3(.5, .5, .5));
+        model = translateMatrix * scaleMatrix;
+        lamp(lightingShader, model);
+
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(0.3 + 4, .081, -0.2));
+        model = translateMatrix * scaleMatrix;
+        lamp(lightingShader, model);
+
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(0.3, .081, -0.2 + 2));
+        model = translateMatrix * scaleMatrix;
+        lamp(lightingShader, model);
+
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(0.3, .081, -0.2 + 4));
+        model = translateMatrix * scaleMatrix;
+        lamp(lightingShader, model);
+
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(0.3 + 2, .081, -0.2 + 4));
+        model = translateMatrix * scaleMatrix;
+        lamp(lightingShader, model);
+
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(0.3 + 4, .081, -0.2 + 4));
+        model = translateMatrix * scaleMatrix;
+        lamp(lightingShader, model);
+
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(0.3 + 2, .081, -0.2 + 2));
+        model = translateMatrix * scaleMatrix;
+        lamp(lightingShader, model);
+
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(0.3 + 4, .081, -0.2 + 2));
+        model = translateMatrix * scaleMatrix;
+        lamp(lightingShader, model);
+
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(-1.7, .52, -3));
+        scaleMatrix = glm::scale(identityMatrix, glm::vec3(1.5, 1, 1.5));
+        model = translateMatrix * scaleMatrix;
+        objects(lightingShader, model, .5, 0, 0, plate);
+
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(-1.7, .55, -3));
+        objects(lightingShader, translateMatrix, .5, 0.5, 0, plate);
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(-1.7, .6, -3));
+        objects(lightingShader, translateMatrix, .5, 0.5, 0.8, plate);
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(-1.7, .6 + .4, -2.8));
+        objects(lightingShader, translateMatrix, .5, 0.5, 0.8, plate);
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(-1.7, 1.05, -2.8));
+        objects(lightingShader, translateMatrix, 0, 0.5, 0, plate);
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(-1.7, 1.1, -2.8));
+        objects(lightingShader, translateMatrix, 0, 0.5, 0.5, plate);
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(-1.7, 1.15, -2.8));
+        objects(lightingShader, translateMatrix, 0.5, 0.5, 0, plate);
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(-1.7, 1.2, -2.8));
+        objects(lightingShader, translateMatrix, 0.5, 0.5, 0.5, plate);
+
+        scaleMatrix = glm::scale(identityMatrix, glm::vec3(.8, 1, .6));
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(-1.7, .6 + .4, -4));
+        model = translateMatrix * scaleMatrix;
+        objects(lightingShader, model, .5, 0.5, 0.8, plate);
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(-1.7, 1.05, -4));
+        model = translateMatrix * scaleMatrix;
+        objects(lightingShader, model, 0, 0.5, 0, plate);
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(-1.7, 1.1, -4));
+        model = translateMatrix * scaleMatrix;
+        objects(lightingShader, model, 0, 0.5, 0.5, plate);
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(-1.7, 1.15, -4));
+        model = translateMatrix * scaleMatrix;
+        objects(lightingShader, model, 0.5, 0.5, 0, plate);
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(-1.7, 1.2, -4));
+        model = translateMatrix * scaleMatrix;
+        objects(lightingShader, model, 0.5, 0.5, 0.5, plate);
+
+        scaleMatrix = glm::scale(identityMatrix, glm::vec3(.8, .9, 1.4));
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(-1.7, .6 + .4 + .5, -3.5 - .5));
+        model = translateMatrix * scaleMatrix;
+        //plates(lightingShader, model, .5, 0.5, 0.8);
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(-1.7, 1.05, -3.5));
+        model = translateMatrix * scaleMatrix;
+        objects(lightingShader, model, 0, 0.5, 0, plate);
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(-1.7, 1.1, -3.5));
+        model = translateMatrix * scaleMatrix;
+        objects(lightingShader, model, 0, 0.5, 0.5, plate);
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(-1.7, 1.15, -3.5));
+        model = translateMatrix * scaleMatrix;
+        objects(lightingShader, model, 0.5, 0.5, 0, plate);
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(-1.7, 1.2, -3.5));
+        model = translateMatrix * scaleMatrix;
+        objects(lightingShader, model, 0.5, 0.5, 0.5, plate);
+
+        scaleMatrix = glm::scale(identityMatrix, glm::vec3(1.5, .8, 1.5));
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(-1.8, 0, .1));
+        model = translateMatrix * scaleMatrix;
+        objects(lightingShader, model, 0.5, 0.5, 0., comode);
+
+        //toilet
+        scaleMatrix = glm::scale(identityMatrix, glm::vec3(1.25, .56, 1.1));
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(7.5, +.3, 3.6));
+        model = translateMatrix * scaleMatrix;
+        objects(lightingShader, model, 1, 1, 1, comode);
+
+        scaleMatrix = glm::scale(identityMatrix, glm::vec3(1.5, .7, 1.5));
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(7.6, 0, 3.6));
+        model = translateMatrix * scaleMatrix;
+        objects(lightingShader, model, 1, 1, 1, pipe);
+
+        scaleMatrix = glm::scale(identityMatrix, glm::vec3(.6, .5, .6));
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(7.6, .4, 3.6));
+        model = translateMatrix * scaleMatrix;
+        sph.drawSphere(lightingShader, model);
+
+        scaleMatrix = glm::scale(identityMatrix, glm::vec3(.2, .05, .4));
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(7.8, .46, 3.4));
+        model = translateMatrix * scaleMatrix;
+        drawCube(cubeVAO, lightingShader, model, 1, 1, 1);
+        scaleMatrix = glm::scale(identityMatrix, glm::vec3(.3, .55, .5));
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(7.8, .48, 3.4));
+        model = translateMatrix * scaleMatrix;
+        drawCube(cubeVAO, lightingShader, model, 1, 1, 1);
+        scaleMatrix = glm::scale(identityMatrix, glm::vec3(.32, .2, .52));
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(7.77, .48 + .4, 3.39));
+        model = translateMatrix * scaleMatrix;
+        drawCube(cubeVAO, lightingShader, model, .5, .5, .5);
+        //flash
+        scaleMatrix = glm::scale(identityMatrix, glm::vec3(.2, .2, .2));
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(7.87, .48 + .59, 4 - .34));
+        model = translateMatrix * scaleMatrix;
+        flash.drawSphere(lightingShader, model);
+
+        //oven
+        model = glm::mat4(1.0f);
+        translateMatrix = glm::translate(identityMatrix, glm::vec3(3.12, 0 - .3 + .05, -4.25));
+        oven(cubeVAO, lightingShader, lightingShaderWithTexture, translateMatrix);
 
 
 
@@ -1256,17 +1736,14 @@ int main()
 
 
 
-
-
-      
-          // also draw the lamp object(s)
+        // also draw the lamp object(s)
         ourShader.use();
         ourShader.setMat4("projection", projection);
         ourShader.setMat4("view", view);
 
         // we now draw as many light bulbs as we have point lights.
         glBindVertexArray(lightCubeVAO);
-        for (unsigned int i = 0; i < 6; i++)
+        for (unsigned int i = 0; i < 7; i++)
         {
             model = glm::mat4(1.0f);
             model = glm::translate(model, pointLightPositions[i]);
@@ -1297,7 +1774,56 @@ int main()
     glfwTerminate();
     return 0;
 }
+void lamp(Shader& lightingShader, glm::mat4 all)
+{
+    glm::mat4 identityMatrix = glm::mat4(1.0f);
+    glm::mat4 scaleMatrix, rotateXMatrix, rotateYMatrix, rotateZMatrix, translateMatrix, model;
+    translateMatrix = glm::translate(identityMatrix, glm::vec3(0, 1, 0));
+    scaleMatrix = glm::scale(identityMatrix, glm::vec3(.25, scale_Y * .15, .25));
+    model = all * translateMatrix * scaleMatrix;
+    lightingShader.setMat4("model", model);
+    bezierVAO = hollowBezier(lamp_h.data(), ((unsigned int)lamp_h.size() / 3) - 1);
+    lightingShader.use();
+    lightingShader.setVec3("material.diffuse", glm::vec3(.5f, .5f, 1.0f));
+    glBindVertexArray(bezierVAO);
+    glDrawElements(GL_TRIANGLES,                    // primitive type
+        (unsigned int)indices.size(),          // # of indices
+        GL_UNSIGNED_INT,                 // data type
+        (void*)0);                       // offset to indices
+    // unbind VAO
+    translateMatrix = glm::translate(identityMatrix, glm::vec3(0, .8, 0));
+    scaleMatrix = glm::scale(identityMatrix, glm::vec3(.15, scale_Y * .25, .15));
+    model = all * translateMatrix * scaleMatrix;
+    lightingShader.setMat4("model", model);
+    bezierVAO = hollowBezier(lamp_b.data(), ((unsigned int)lamp_b.size() / 3) - 1);
+    lightingShader.use();
+    lightingShader.setVec3("material.diffuse", glm::vec3(1.0f, 01.0f, .0f));
+    glBindVertexArray(bezierVAO);
+    glDrawElements(GL_TRIANGLES,                    // primitive type
+        (unsigned int)indices.size(),          // # of indices
+        GL_UNSIGNED_INT,                 // data type
+        (void*)0);                       // offset to indices
+    // unbind VAO
 
+
+}
+void objects(Shader& lightingShader, glm::mat4 all, float r, float g, float b, vector<float> v)
+{
+    glm::mat4 identityMatrix = glm::mat4(1.0f);
+    glm::mat4 scaleMatrix, rotateXMatrix, rotateYMatrix, rotateZMatrix, translateMatrix, model;
+    translateMatrix = glm::translate(identityMatrix, glm::vec3(0, 0, 0));
+    scaleMatrix = glm::scale(identityMatrix, glm::vec3(.25, .35, .25));
+    model = all * translateMatrix * scaleMatrix;
+    lightingShader.setMat4("model", model);
+    bezierVAO = hollowBezier(v.data(), ((unsigned int)v.size() / 3) - 1);
+    lightingShader.use();
+    lightingShader.setVec3("material.diffuse", glm::vec3(r, g, b));
+    glBindVertexArray(bezierVAO);
+    glDrawElements(GL_TRIANGLES,                    // primitive type
+        (unsigned int)indices.size(),          // # of indices
+        GL_UNSIGNED_INT,                 // data type
+        (void*)0);
+}
 void drawCube(unsigned int& cubeVAO, Shader& lightingShader, glm::mat4 model = glm::mat4(1.0f), float r = 1.0f, float g = 1.0f, float b = 1.0f)
 {
     lightingShader.use();
@@ -1312,9 +1838,82 @@ void drawCube(unsigned int& cubeVAO, Shader& lightingShader, glm::mat4 model = g
     glBindVertexArray(cubeVAO);
     glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
 }
+void fridge(unsigned int& cubeVAO, Shader& lightingShader, Sphere& sp, glm::mat4 alTogether)
+{
+    glm::mat4 identityMatrix = glm::mat4(1.0f);
+    glm::mat4 scaleMatrix, rotateXMatrix, rotateYMatrix, rotateZMatrix, translateMatrix, model;
+    scaleMatrix = glm::scale(identityMatrix, glm::vec3(1.1, 1.8, .02));
+    translateMatrix = glm::translate(identityMatrix, glm::vec3(0, 0, 0));
+    model = alTogether * translateMatrix * scaleMatrix;
+    drawCube(cubeVAO, lightingShader, model, 0.83, 0.83, 0.83);
+
+    scaleMatrix = glm::scale(identityMatrix, glm::vec3(.02, 1.8, .8));
+    model = alTogether * translateMatrix * scaleMatrix;
+    drawCube(cubeVAO, lightingShader, model, 0.83, 0.83, 0.83);
 
 
-void fan_holder(unsigned int& cubeVAO, Shader& lightingShader, glm::mat4 alTogether)
+    translateMatrix = glm::translate(identityMatrix, glm::vec3(1.1, 0, 0));
+    model = alTogether * translateMatrix * scaleMatrix;
+    drawCube(cubeVAO, lightingShader, model, 0.83, 0.83, 0.83);
+
+    scaleMatrix = glm::scale(identityMatrix, glm::vec3(.05, 1.8, .82));
+    translateMatrix = glm::translate(identityMatrix, glm::vec3(0.55, .0, 0));
+    model = alTogether * translateMatrix * scaleMatrix;
+    drawCube(cubeVAO, lightingShader, model, 0.83, 0.83, 0.83);
+
+    scaleMatrix = glm::scale(identityMatrix, glm::vec3(1.1, .02, .8));
+    translateMatrix = glm::translate(identityMatrix, glm::vec3(0, 1.8 - .02, 0));
+    model = alTogether * translateMatrix * scaleMatrix;
+    drawCube(cubeVAO, lightingShader, model, 0.83, 0.83, 0.83);
+    scaleMatrix = glm::scale(identityMatrix, glm::vec3(1.2, .15, .85));
+    translateMatrix = glm::translate(identityMatrix, glm::vec3(-.025, .02, 0));
+    model = alTogether * translateMatrix * scaleMatrix;
+    drawCube(cubeVAO, lightingShader, model, 0.23, 0.23, 0.23);
+
+
+    scaleMatrix = glm::scale(identityMatrix, glm::vec3(1.1, .02, .7));
+    translateMatrix = glm::translate(identityMatrix, glm::vec3(0, 1.8 - .02 - .4, 0));
+    model = alTogether * translateMatrix * scaleMatrix;
+    drawCube(cubeVAO, lightingShader, model, 0.83, 0.83, 0.83);
+    translateMatrix = glm::translate(identityMatrix, glm::vec3(0, 1.8 - .02 - .8, 0));
+    model = alTogether * translateMatrix * scaleMatrix;
+    drawCube(cubeVAO, lightingShader, model, 0.83, 0.83, 0.83);
+    translateMatrix = glm::translate(identityMatrix, glm::vec3(0, 1.8 - .02 - 1.2, 0));
+    model = alTogether * translateMatrix * scaleMatrix;
+    drawCube(cubeVAO, lightingShader, model, 0.83, 0.83, 0.83);
+
+
+
+}
+void oven(unsigned int& cubeVAO, Shader& lightingShader, Shader& lightingShaderWithTexture, glm::mat4 alTogether)
+{
+    glm::mat4 identityMatrix = glm::mat4(1.0f);
+    glm::mat4 scaleMatrix, rotateXMatrix, rotateYMatrix, rotateZMatrix, translateMatrix, model;
+    scaleMatrix = glm::scale(identityMatrix, glm::vec3(.6, .4, .02));
+    translateMatrix = glm::translate(identityMatrix, glm::vec3(0, 1, 0));
+    model = alTogether * translateMatrix * scaleMatrix;
+    drawCube(cubeVAO, lightingShader, model, 0.83, 0.83, 0.83);
+
+    scaleMatrix = glm::scale(identityMatrix, glm::vec3(.02, .4, .4));
+    translateMatrix = glm::translate(identityMatrix, glm::vec3(0, 1, 0));
+    model = alTogether * translateMatrix * scaleMatrix;
+    drawCube(cubeVAO, lightingShader, model, 0.83, 0.83, 0.83);
+
+    translateMatrix = glm::translate(identityMatrix, glm::vec3(.6 - .02, 1, 0));
+    model = alTogether * translateMatrix * scaleMatrix;
+    drawCube(cubeVAO, lightingShader, model, 0.83, 0.83, 0.83);
+
+    scaleMatrix = glm::scale(identityMatrix, glm::vec3(.6, .02, .4));
+    translateMatrix = glm::translate(identityMatrix, glm::vec3(0, 1, 0));
+    model = alTogether * translateMatrix * scaleMatrix;
+    drawCube(cubeVAO, lightingShader, model, 0.83, 0.83, 0.83);
+
+    translateMatrix = glm::translate(identityMatrix, glm::vec3(0, 1.4 - .02, 0));
+    model = alTogether * translateMatrix * scaleMatrix;
+    drawCube(cubeVAO, lightingShader, model, 0.83, 0.83, 0.83);
+}
+
+void fan_holder(unsigned int& cubeVAO, Shader& lightingShader, glm::mat4 alTogether, Sphere& sp)
 {
     glm::mat4 model = glm::mat4(1.0f);
     glm::mat4 translate = glm::mat4(1.0f);
@@ -1323,7 +1922,7 @@ void fan_holder(unsigned int& cubeVAO, Shader& lightingShader, glm::mat4 alToget
     scale = glm::scale(model, glm::vec3(.2, .05, .1));
     translate = glm::translate(model, glm::vec3(-0.5, 0.0, -0.5));
     translate2 = glm::translate(model, glm::vec3(-0., 0.3, -0.));
-    model = alTogether *translate2* scale * translate;
+    model = alTogether * translate2 * scale * translate;
     drawCube(cubeVAO, lightingShader, model, 0.03, 0.03, 0.03);
 
 
@@ -1334,17 +1933,24 @@ void fan_holder(unsigned int& cubeVAO, Shader& lightingShader, glm::mat4 alToget
     drawCube(cubeVAO, lightingShader, model, 0.03, 0.03, 0.03);
 
 
+    model = glm::mat4(1.0f);
+    scale = glm::scale(model, glm::vec3(.7, .3, .7));
+    translate = glm::translate(model, glm::vec3(-0.3 + .32, 0.15, 0));
+    model = alTogether * scale * translate;
+    sp.drawSphere(lightingShader, model);
+
+
 }
-void kitchen(unsigned int& cubeVAO, Shader& lightingShader,Shader& lightingShaderWithTexture,Cube& cube,Sphere& sp )
+void kitchen(unsigned int& cubeVAO, Shader& lightingShader, Shader& lightingShaderWithTexture, Cube& cube, Sphere& sp)
 {
     glm::mat4 identityMatrix = glm::mat4(1.0f);
-    glm::mat4 scaleMatrix, rotateXMatrix, rotateYMatrix, rotateZMatrix, translateMatrix,model;
+    glm::mat4 scaleMatrix, rotateXMatrix, rotateYMatrix, rotateZMatrix, translateMatrix, model;
     scaleMatrix = glm::scale(identityMatrix, glm::vec3(1, .9, 2.1));
     rotateXMatrix = glm::rotate(identityMatrix, glm::radians(0.0f), glm::vec3(1.0f, 0.0f, 0.0f));
     rotateYMatrix = glm::rotate(identityMatrix, glm::radians(.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     rotateZMatrix = glm::rotate(identityMatrix, glm::radians(.0f), glm::vec3(0.0f, 0.0f, 1.0f));
     translateMatrix = glm::translate(identityMatrix, glm::vec3(0, 0, 0));
-    model = translateMatrix * rotateXMatrix * rotateYMatrix * rotateZMatrix* scaleMatrix;
+    model = translateMatrix * rotateXMatrix * rotateYMatrix * rotateZMatrix * scaleMatrix;
     //table
     //drawCube(cubeVAO, lightingShaderWithTexture, model, 0.23, 0., 0.23);
     glm::mat4 modelMatrixForContainer = glm::mat4(1.0f);
@@ -1361,7 +1967,7 @@ void kitchen(unsigned int& cubeVAO, Shader& lightingShader,Shader& lightingShade
     model = translateMatrix * rotateXMatrix * rotateYMatrix * rotateZMatrix * scaleMatrix;
     drawCube(cubeVAO, lightingShader, model, 0.143, 0.084, 0.071);
 
-   
+
     translateMatrix = glm::translate(identityMatrix, glm::vec3(-2.5, 2, -4.4));
     model = translateMatrix * rotateXMatrix * rotateYMatrix * rotateZMatrix * scaleMatrix;
     drawCube(cubeVAO, lightingShader, model, 0.143, 0.084, 0.071);
@@ -1384,18 +1990,18 @@ void kitchen(unsigned int& cubeVAO, Shader& lightingShader,Shader& lightingShade
 
     //sink
     scaleMatrix = glm::scale(identityMatrix, glm::vec3(1.1, 1, 1.15));
-    translateMatrix = glm::translate(identityMatrix, glm::vec3(-2.1,.7, -2.3));
+    translateMatrix = glm::translate(identityMatrix, glm::vec3(-2.1, .7, -2.3));
     model = translateMatrix * rotateXMatrix * rotateYMatrix * rotateZMatrix * scaleMatrix;
     sink(cubeVAO, lightingShader, model);
 
     //tap
     scaleMatrix = glm::scale(identityMatrix, glm::vec3(1.5, 1, 1.5));
-    translateMatrix = glm::translate(identityMatrix, glm::vec3(-2.1,.9,-2.75));
+    translateMatrix = glm::translate(identityMatrix, glm::vec3(-2.1, .9, -2.75));
     model = translateMatrix * rotateXMatrix * rotateYMatrix * rotateZMatrix * scaleMatrix;
-    tap(cubeVAO, lightingShader, model,sp);
+    tap(cubeVAO, lightingShader, model, sp);
 
 }
-void basin(unsigned int& cubeVAO, Shader& lightingShader, Sphere& sp,Sphere& sp2)
+void basin(unsigned int& cubeVAO, Shader& lightingShader, Sphere& sp, Sphere& sp2)
 {
     glm::mat4 identityMatrix = glm::mat4(1.0f);
     glm::mat4 modelForSphere = glm::mat4(1.0f);
@@ -1403,19 +2009,19 @@ void basin(unsigned int& cubeVAO, Shader& lightingShader, Sphere& sp,Sphere& sp2
     scaleMatrix = glm::scale(identityMatrix, glm::vec3(1.2, 1, .8));
 
     translateMatrix = glm::translate(identityMatrix, glm::vec3(7.4, .7, -1.5));
-    model = translateMatrix *  scaleMatrix;
+    model = translateMatrix * scaleMatrix;
     sink(cubeVAO, lightingShader, model);
 
 
     rotateYMatrix = glm::rotate(identityMatrix, glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-    translateMatrix = glm::translate(identityMatrix, glm::vec3(8, .8,-0.5));
-    model = translateMatrix * rotateYMatrix* scaleMatrix;
+    translateMatrix = glm::translate(identityMatrix, glm::vec3(8, .8, -0.5));
+    model = translateMatrix * rotateYMatrix * scaleMatrix;
     tap(cubeVAO, lightingShader, model, sp);
 
     scaleMatrix = glm::scale(identityMatrix, glm::vec3(.8, .1, .8));
     translateMatrix = glm::translate(identityMatrix, glm::vec3(0, 0, 0));
-    model =   translateMatrix * scaleMatrix;
-    modelForSphere = glm::translate(model, glm::vec3(9.6f,.01f, -1.4));
+    model = translateMatrix * scaleMatrix;
+    modelForSphere = glm::translate(model, glm::vec3(9.6f, .01f, -1.4));
     sp2.drawSphere(lightingShader, modelForSphere);
 
     float y = .01f;
@@ -1458,7 +2064,7 @@ void tap(unsigned int& cubeVAO, Shader& lightingShader, glm::mat4 alTogether, Sp
     drawCube(cubeVAO, lightingShader, model, 0.1, 0.1, 0.1);
 
 
-    scaleMatrix = glm::scale(identityMatrix, glm::vec3(.13, .12,.12));
+    scaleMatrix = glm::scale(identityMatrix, glm::vec3(.13, .12, .12));
     translateMatrix = glm::translate(identityMatrix, glm::vec3(0, 0, 0));
     model = alTogether * translateMatrix * scaleMatrix;
     modelForSphere = glm::translate(model, glm::vec3(0.125f, 1.3f, 6.5));
@@ -1471,7 +2077,7 @@ void tap(unsigned int& cubeVAO, Shader& lightingShader, glm::mat4 alTogether, Sp
     sp.drawSphere(lightingShader, modelForSphere);
 
 
-    
+
 
 
 
@@ -1531,17 +2137,17 @@ void stove(unsigned int& cubeVAO, Shader& lightingShader, Sphere& sp)
     rotateYMatrix = glm::rotate(identityMatrix, glm::radians(.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     rotateZMatrix = glm::rotate(identityMatrix, glm::radians(.0f), glm::vec3(0.0f, 0.0f, 1.0f));
     translateMatrix = glm::translate(identityMatrix, glm::vec3(0, 0, -1.82));
-    model =  translateMatrix * scaleMatrix;
+    model = translateMatrix * scaleMatrix;
     drawCube(cubeVAO, lightingShader, model, 1.0, 0.9, 0.9);
 
     scaleMatrix = glm::scale(identityMatrix, glm::vec3(1.5, .01, .7));
     translateMatrix = glm::translate(identityMatrix, glm::vec3(0, .7, -1.82));
     model = translateMatrix * scaleMatrix;
-    drawCube(cubeVAO, lightingShader, model, .1,.1,.1);
+    drawCube(cubeVAO, lightingShader, model, .1, .1, .1);
 
     scaleMatrix = glm::scale(identityMatrix, glm::vec3(.17, .01, .17));
     translateMatrix = glm::translate(identityMatrix, glm::vec3(0, 0, 0));
-    model =  translateMatrix * scaleMatrix;
+    model = translateMatrix * scaleMatrix;
     modelForSphere = glm::translate(model, glm::vec3(3.0f, 71.0f, -8.55));
     sp.drawSphere(lightingShader, modelForSphere);
 
@@ -1567,7 +2173,7 @@ void chair(unsigned int& cubeVAO, Shader& lightingShader, glm::mat4 alTogether)
     glm::mat4 model = glm::mat4(1.0f);
     glm::mat4 translate = glm::mat4(1.0f);
     glm::mat4 scale = glm::mat4(1.0f);
-    scale = glm::scale(model, glm::vec3(.02,.7, .02));
+    scale = glm::scale(model, glm::vec3(.02, .7, .02));
     translate = glm::translate(model, glm::vec3(-0.5, 0, -0.5));
     model = alTogether * scale * translate;
     drawCube(cubeVAO, lightingShader, model, 0.1, 0.1, 0.1);
@@ -1590,11 +2196,11 @@ void chair(unsigned int& cubeVAO, Shader& lightingShader, glm::mat4 alTogether)
     //short_left
     model = glm::mat4(1.0f);
     translate = glm::mat4(1.0f);
-     translate2 = glm::mat4(1.0f);
+    translate2 = glm::mat4(1.0f);
     scale = glm::mat4(1.0f);
-   
+
     scale = glm::scale(model, glm::vec3(.02, .35, .02));
-    translate2 = glm::translate(identityMatrix, glm::vec3(.0, 0,- 0.3));
+    translate2 = glm::translate(identityMatrix, glm::vec3(.0, 0, -0.3));
     translate = glm::translate(model, glm::vec3(-0.5, 0, -0.5));
     model = alTogether * translate2 * scale * translate;
     drawCube(cubeVAO, lightingShader, model, 0.1, 0.1, 0.1);
@@ -1639,36 +2245,32 @@ void chair(unsigned int& cubeVAO, Shader& lightingShader, glm::mat4 alTogether)
 }
 
 
-void fan(unsigned int& cubeVAO, Shader& lightingShader, glm::mat4 alTogether )
+void fan(unsigned int& cubeVAO, Shader& lightingShader, glm::mat4 alTogether)
 {
-    float len = 1;
-    float w = .15;
-    float h = .05;
-    float r = 15.f;
 
 
-        //fin
-    
-        glm::mat4 model = glm::mat4(1.0f);
-        glm::mat4 translate = glm::mat4(1.0f);
-        glm::mat4 translate2 = glm::mat4(1.0f);
-        glm::mat4 scale = glm::mat4(1.0f);
-        scale = glm::scale(model, glm::vec3(len, h, w));
-        translate = glm::translate(model, glm::vec3(-0.5, 0, -0.5));
-        model = alTogether * scale * translate;
-        drawCube(cubeVAO, lightingShader, model, 0.1, 0.271, 0.075);
 
-        model = glm::mat4(1.0f);
-        translate = glm::mat4(1.0f);
-        translate2 = glm::mat4(1.0f);
-        scale = glm::mat4(1.0f);
-        scale = glm::scale(model, glm::vec3(w, h, len));
-        translate = glm::translate(model, glm::vec3(-0.5, 0, -0.5));
-        //translate2 = glm::translate(model, glm::vec3(-0.5, 0, -0.5));
-        model = alTogether * scale * translate;
-        drawCube(cubeVAO, lightingShader, model, 0.1, 0.271, 0.075);
-    
+    //fin
 
+    glm::mat4 identityMatrix = glm::mat4(1.0f);
+    glm::mat4 modelForSphere = glm::mat4(1.0f);
+    glm::mat4 scaleMatrix, rotateXMatrix, rotateYMatrix, rotateZMatrix, translateMatrix, model;
+    scaleMatrix = glm::scale(identityMatrix, glm::vec3(.65, .02, .12));
+    rotateYMatrix = glm::rotate(identityMatrix, glm::radians(.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    translateMatrix = glm::translate(identityMatrix, glm::vec3(0, 2.71, 0));
+    model = alTogether * translateMatrix * scaleMatrix;
+    drawCube(cubeVAO, lightingShader, model, 0, .5, .1);
+
+    // scaleMatrix = glm::scale(identityMatrix, glm::vec3(.65, .02, .12));
+    rotateYMatrix = glm::rotate(identityMatrix, glm::radians(120.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    //translateMatrix = glm::translate(identityMatrix, glm::vec3(0, 1, 0));
+    model = alTogether * translateMatrix * rotateYMatrix * scaleMatrix;
+    drawCube(cubeVAO, lightingShader, model, 0, .5, .1);
+
+    rotateYMatrix = glm::rotate(identityMatrix, glm::radians(240.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    //  translateMatrix = glm::translate(identityMatrix, glm::vec3(0, 1, 0));
+    model = alTogether * translateMatrix * rotateYMatrix * scaleMatrix;
+    drawCube(cubeVAO, lightingShader, model, 0, .5, .1);
 
 
 }
@@ -1694,7 +2296,7 @@ void table(unsigned int& cubeVAO, Shader& lightingShader, glm::mat4 alTogether)
     scale = glm::scale(model, glm::vec3(legwidth, legHeight, legwidth));
     translate = glm::translate(model, glm::vec3(-0.5, 0, -0.5));
     translate1 = glm::translate(identityMatrix, glm::vec3(-.2, 0, 0));
-    model = alTogether * translate1* scale * translate;
+    model = alTogether * translate1 * scale * translate;
     drawCube(cubeVAO, lightingShader, model, 0.545, 0.271, 0.075);
 
     //leg_left2
@@ -1706,7 +2308,7 @@ void table(unsigned int& cubeVAO, Shader& lightingShader, glm::mat4 alTogether)
     scale = glm::scale(model, glm::vec3(legwidth, legHeight, legwidth));
     translate2 = glm::translate(identityMatrix, glm::vec3(-0.2, 0, -0.4));
     translate = glm::translate(model, glm::vec3(-0.5, 0, -0.5));
-    model = alTogether  * translate2 * scale*translate;
+    model = alTogether * translate2 * scale * translate;
     drawCube(cubeVAO, lightingShader, model, 0.545, 0.271, 0.075);
 
     //right1
@@ -1717,7 +2319,7 @@ void table(unsigned int& cubeVAO, Shader& lightingShader, glm::mat4 alTogether)
     scale = glm::scale(model, glm::vec3(legwidth, legHeight, legwidth));
     translate2 = glm::translate(identityMatrix, glm::vec3(1.0, 0, 0));
     translate = glm::translate(model, glm::vec3(-0.5, 0, -0.5));
-    model = alTogether * translate2 * scale*translate;
+    model = alTogether * translate2 * scale * translate;
     drawCube(cubeVAO, lightingShader, model, 0.545, 0.271, 0.075);
 
     //right2
@@ -1728,20 +2330,20 @@ void table(unsigned int& cubeVAO, Shader& lightingShader, glm::mat4 alTogether)
     scale = glm::scale(model, glm::vec3(legwidth, legHeight, legwidth));
     translate2 = glm::translate(identityMatrix, glm::vec3(1.0, 0, -0.4));
     translate = glm::translate(model, glm::vec3(-0.5, 0, -0.5));
-     model = alTogether * translate2 * scale*translate;
-     drawCube(cubeVAO, lightingShader, model, 0.545, 0.271, 0.075);
+    model = alTogether * translate2 * scale * translate;
+    drawCube(cubeVAO, lightingShader, model, 0.545, 0.271, 0.075);
 
     //top
-     model = glm::mat4(1.0f);
+    model = glm::mat4(1.0f);
     translate = glm::mat4(1.0f);
     translate2 = glm::mat4(1.0f);
     scale = glm::mat4(1.0f);
-    scale = glm::scale(identityMatrix, glm::vec3(top_len, top_h,- top_w));
+    scale = glm::scale(identityMatrix, glm::vec3(top_len, top_h, -top_w));
     translate2 = glm::translate(identityMatrix, glm::vec3(.40, legHeight, -0.2));
     translate = glm::translate(model, glm::vec3(-0.5, 0, -0.5));
-    model = alTogether*translate2 *scale*translate;
+    model = alTogether * translate2 * scale * translate;
     drawCube(cubeVAO, lightingShader, model, 1, 0.35, 0);
-    
+
 }
 
 
@@ -1772,31 +2374,22 @@ void processInput(GLFWwindow* window)
 
     if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS)
     {
-       // if (rotateAxis_X) rotateAngle_X -= 0.1;
-       // else if (rotateAxis_Y) rotateAngle_Y -= 0.1;
-        //else rotateAngle_Z -= 0.1;
+        // if (rotateAxis_X) rotateAngle_X -= 0.1;
+        // else if (rotateAxis_Y) rotateAngle_Y -= 0.1;
+         //else rotateAngle_Z -= 0.1;
     }
-    /*if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS) translate_Y += 0.001;
-    if (glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS) translate_Y -= 0.001;
-    if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS) translate_X += 0.001;
-    if (glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS) translate_X -= 0.001;
-    if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS) translate_Z += 0.001;
-    //if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS) translate_Z -= 0.001;
-    if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS) scale_X += 0.001;
-    if (glfwGetKey(window, GLFW_KEY_V) == GLFW_PRESS) scale_X -= 0.001;
-    if (glfwGetKey(window, GLFW_KEY_B) == GLFW_PRESS) scale_Y += 0.001;
-    if (glfwGetKey(window, GLFW_KEY_N) == GLFW_PRESS) scale_Y -= 0.001;
-    if (glfwGetKey(window, GLFW_KEY_M) == GLFW_PRESS) scale_Z += 0.001;
-    if (glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS) scale_Z -= 0.001;*/
 
     //fan_onOff
 
     if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS)
     {
-        if (fanSwitch == false)
-            fanSwitch = true;
+        fanSwitch = !fanSwitch;
 
-        else fanSwitch = false;
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS)
+    {
+        of = !of;
 
     }
 
@@ -1833,9 +2426,9 @@ void processInput(GLFWwindow* window)
             z_move1 += .5f;
             flag = false;
         }
-      
-        
-    }  
+
+
+    }
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
     {
         if (z_move2 == 0.0f)
@@ -1848,61 +2441,25 @@ void processInput(GLFWwindow* window)
             z_move2 += .5f;
             flag = false;
         }
-      
+
     }
     if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
     {
-        if (door == 0.0f)
-        {
-            for (int i = 1;i<=7; i++)
-            {
-                door += .1;
-            }
-         
-            flag = true;
-        }
-        else if (flag)
-        {
-            for (int i = 1; i <= 7; i++)
-            {
-                door -= .1;
-            }
-            flag = false;
-        }
-
-    }
-   
-   /* if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS)
-    {
-        eyeX += 2.5 * deltaTime;
-        basic_camera.changeEye(eyeX, eyeY, eyeZ);
-    }
-    if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS)
-    {
-        eyeX -= 2.5 * deltaTime;
-        basic_camera.changeEye(eyeX, eyeY, eyeZ);
+        dflag = !dflag;
     }
     if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS)
     {
-        eyeZ += 2.5 * deltaTime;
-        basic_camera.changeEye(eyeX, eyeY, eyeZ);
+        tflag = !tflag;
+    }
+    if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS)
+    {
+        fflag = !fflag;
     }
     if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS)
     {
-        eyeZ -= 2.5 * deltaTime;
-        basic_camera.changeEye(eyeX, eyeY, eyeZ);
+        fflag2 = !fflag2;
     }
-    if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
-    {
-        eyeY += 2.5 * deltaTime;
-        basic_camera.changeEye(eyeX, eyeY, eyeZ);
-    }
-    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
-    {
-        eyeY -= 2.5 * deltaTime;
-        basic_camera.changeEye(eyeX, eyeY, eyeZ);
-    }
-    */
+
 
     if (glfwGetKey(window, GLFW_KEY_B) == GLFW_PRESS) //point
     {
@@ -1918,7 +2475,7 @@ void processInput(GLFWwindow* window)
         {
             dLight = true;
         }
-        
+
 
         sLight = false;
     }
@@ -1938,6 +2495,9 @@ void processInput(GLFWwindow* window)
             pointlight2.turnOff();
             pointlight3.turnOff();
             pointlight4.turnOff();
+            pointlight5.turnOff();
+            pointlight6.turnOff();
+            pointlight7.turnOff();
 
         }
         if (sLight)
@@ -1958,6 +2518,9 @@ void processInput(GLFWwindow* window)
             pointlight2.turnOn();
             pointlight3.turnOn();
             pointlight4.turnOn();
+            pointlight5.turnOn();
+            pointlight6.turnOn();
+            pointlight7.turnOn();
         }
 
         if (sLight)
@@ -1980,6 +2543,9 @@ void processInput(GLFWwindow* window)
             pointlight2.turnAmbientOn();
             pointlight3.turnAmbientOn();
             pointlight4.turnAmbientOn();
+            pointlight5.turnAmbientOn();
+            pointlight6.turnAmbientOn();
+            pointlight7.turnAmbientOn();
         }
 
         if (sLight)
@@ -1999,6 +2565,9 @@ void processInput(GLFWwindow* window)
             pointlight2.turnAmbientOff();
             pointlight3.turnAmbientOff();
             pointlight4.turnAmbientOff();
+            pointlight5.turnAmbientOff();
+            pointlight6.turnAmbientOff();
+            pointlight7.turnAmbientOff();
         }
 
         if (sLight)
@@ -2019,6 +2588,9 @@ void processInput(GLFWwindow* window)
             pointlight2.turnDiffuseOn();
             pointlight3.turnDiffuseOn();
             pointlight4.turnDiffuseOn();
+            pointlight5.turnDiffuseOn();
+            pointlight6.turnDiffuseOn();
+            pointlight7.turnDiffuseOn();
         }
         if (sLight)
             spotlight1.turnDiffuseOn();
@@ -2038,6 +2610,9 @@ void processInput(GLFWwindow* window)
             pointlight2.turnDiffuseOff();
             pointlight3.turnDiffuseOff();
             pointlight4.turnDiffuseOff();
+            pointlight5.turnDiffuseOff();
+            pointlight6.turnDiffuseOff();
+            pointlight7.turnDiffuseOff();
         }
 
         if (sLight)
@@ -2057,6 +2632,9 @@ void processInput(GLFWwindow* window)
             pointlight2.turnSpecularOn();
             pointlight3.turnSpecularOn();
             pointlight4.turnSpecularOn();
+            pointlight5.turnSpecularOn();
+            pointlight6.turnSpecularOn();
+            pointlight7.turnSpecularOn();
         }
         if (sLight)
             spotlight1.turnSpecularOn();
@@ -2076,6 +2654,9 @@ void processInput(GLFWwindow* window)
             pointlight2.turnSpecularOff();
             pointlight3.turnSpecularOff();
             pointlight4.turnSpecularOff();
+            pointlight5.turnSpecularOff();
+            pointlight6.turnSpecularOff();
+            pointlight7.turnSpecularOff();
         }
 
         if (sLight)
@@ -2086,7 +2667,7 @@ void processInput(GLFWwindow* window)
             //directionallight1.turnSpecularOff();
         }
     }
- 
+
 
 }
 
@@ -2205,81 +2786,6 @@ void scsToWcs(float sx, float sy, float wcsv[3])
 // -------------------------------------------------------
 
 
-void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
-{
-    double x, y;
-    //getting cursor position
-    glfwGetCursorPos(window, &x, &y);
-    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
-    {
-        if (mouseButtonFlag != 1)
-        {
-            mouseButtonFlag = 1;
-            clkpt[0].x = x;
-            clkpt[0].y = y;
-        }
-        scsToWcs(clkpt[0].x, clkpt[0].y, wcsClkDn);
-        cout << "\nD: " << x << " " << y << " wcs: " << wcsClkDn[0] << " " << wcsClkDn[1] << " " << wcsClkDn[2];
-    }
-    else if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) //etai used
-    {
-        if (mouseButtonFlag == 1)
-        {
-            clkpt[1].x = x;
-            clkpt[1].y = y;
-            mouseButtonFlag = 0;
-        }
-        scsToWcs(clkpt[1].x, clkpt[1].y, wcsClkUp);
-        cout << "\nU: " << x << " " << y << " wcs: " << wcsClkUp[0] << " " << wcsClkUp[1] << " " << wcsClkUp[2];
-        cntrlPoints.push_back(wcsClkUp[0]);
-        cntrlPoints.push_back(wcsClkUp[1]);
-        cntrlPoints.push_back(wcsClkUp[2]);
-    }
-}
-/*
-void saveControlPoints()
-{
-    if (cntrlPoints.size())
-    {
-        fp = fopen("points you can copy.txt", "w");
-        if (fp == NULL)
-        {
-            cout << "File Opening Failed" << endl;
-        }
-        else
-        {
-            fprintf(fp, "{\n");
-            size_t count = cntrlPoints.size();
-            for (int i = 0; i < count / 3; i++)
-            {
-                int j = i * 3;
-                fprintf(fp, "%0.4f, %0.4f, %0.4f,\n", cntrlPoints[j], cntrlPoints[j + 1], cntrlPoints[j + 2]);
-            }
-            fprintf(fp, "}");
-            fclose(fp);
-        }
-    }
-}
-
-*/
-unsigned int drawControlPoints()
-{
-    unsigned int controlPointVAO;
-    unsigned int controlPointVBO;
-
-    glGenVertexArrays(1, &controlPointVAO);
-    glGenBuffers(1, &controlPointVBO);
-
-    glBindVertexArray(controlPointVAO);
-
-    glBindBuffer(GL_ARRAY_BUFFER, controlPointVBO);
-    glBufferData(GL_ARRAY_BUFFER, (unsigned int)cntrlPoints.size() * sizeof(float), cntrlPoints.data(), GL_STATIC_DRAW);
-
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-
-    return controlPointVAO;
-}
 
 
 long long nCr(int n, int r)
@@ -2324,7 +2830,10 @@ unsigned int hollowBezier(GLfloat ctrlpoints[], int L)
     float x, y, z, r;                //current coordinates
     float theta;
     float nx, ny, nz, lengthInv;    // vertex normal
-
+    coordinates.clear();
+    normals.clear();
+    indices.clear();
+    vertices.clear();
 
     const float dtheta = 2 * pi / ntheta;        //angular step size
 
@@ -2443,108 +2952,3 @@ unsigned int hollowBezier(GLfloat ctrlpoints[], int L)
     return bezierVAO;
 }
 
-void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
-{
-   /* if (key == GLFW_KEY_1 && action == GLFW_PRESS)
-    {
-        if (pointLightOn)
-        {
-            pointlight1.turnOff();
-            pointlight2.turnOff();
-            pointlight3.turnOff();
-            pointlight4.turnOff();
-            pointLightOn = !pointLightOn;
-        }
-        else
-        {
-            pointlight1.turnOn();
-            pointlight2.turnOn();
-            pointlight3.turnOn();
-            pointlight4.turnOn();
-            pointLightOn = !pointLightOn;
-        }
-    }
-    if (key == GLFW_KEY_2 && action == GLFW_PRESS)
-    {
-        if (pointLightOn)
-        {
-            if (ambientToggle)
-            {
-                pointlight1.turnAmbientOff();
-                pointlight2.turnAmbientOff();
-                pointlight3.turnAmbientOff();
-                pointlight4.turnAmbientOff();
-                ambientToggle = !ambientToggle;
-            }
-            else
-            {
-                pointlight1.turnAmbientOn();
-                pointlight2.turnAmbientOn();
-                pointlight3.turnAmbientOn();
-                pointlight4.turnAmbientOn();
-                ambientToggle = !ambientToggle;
-            }
-        }
-
-    }
-    if (key == GLFW_KEY_3 && action == GLFW_PRESS)
-    {
-        if (pointLightOn)
-        {
-            if (diffuseToggle)
-            {
-                pointlight1.turnDiffuseOff();
-                pointlight2.turnDiffuseOff();
-                pointlight3.turnDiffuseOff();
-                pointlight4.turnDiffuseOff();
-                diffuseToggle = !diffuseToggle;
-            }
-            else
-            {
-                pointlight1.turnDiffuseOn();
-                pointlight2.turnDiffuseOn();
-                pointlight3.turnDiffuseOn();
-                pointlight4.turnDiffuseOn();
-                diffuseToggle = !diffuseToggle;
-            }
-        }
-    }
-    if (key == GLFW_KEY_4 && action == GLFW_PRESS)
-    {
-        if (pointLightOn)
-        {
-            if (specularToggle)
-            {
-                pointlight1.turnSpecularOff();
-                pointlight2.turnSpecularOff();
-                pointlight3.turnSpecularOff();
-                pointlight4.turnSpecularOff();
-                specularToggle = !specularToggle;
-            }
-            else
-            {
-                pointlight1.turnSpecularOn();
-                pointlight2.turnSpecularOn();
-                pointlight3.turnSpecularOn();
-                pointlight4.turnSpecularOn();
-                specularToggle = !specularToggle;
-            }
-        }
-    }
-    if (key == GLFW_KEY_7 && action == GLFW_PRESS)
-    {
-        //saveControlPoints();
-    }*/
-    if (key == GLFW_KEY_S && action == GLFW_PRESS)
-    {
-        showControlPoints = !showControlPoints;
-    }
-    if (key == GLFW_KEY_D && action == GLFW_PRESS)
-    {
-        loadBezierCurvePoints = !loadBezierCurvePoints;
-    }
-    if (key == GLFW_KEY_A && action == GLFW_PRESS)
-    {
-        lineMode = !lineMode;
-    }
-}

@@ -48,7 +48,7 @@ struct SpotLight {
 };
 
 
-#define NR_POINT_LIGHTS 4
+#define NR_POINT_LIGHTS 6
 #define NR_SPOT_LIGHTS 1
 in vec3 FragPos; //vs er output chilo
 in vec3 Normal;

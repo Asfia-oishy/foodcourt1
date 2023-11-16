@@ -142,7 +142,7 @@
     <ClInclude Include="stb_image.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\GLFW GLAD Installation Using Visual Studio 2022\GLFW GLAD Installation Using Visual Studio 2022\opengl\glad.c" />
+    <ClCompile Include="..\..\GLFW GLAD Installation Using Visual Studio 2022\GLFW GLAD Installation Using Visual Studio 2022\opengl\glad.c" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="stb_image.cpp" />
   </ItemGroup>
