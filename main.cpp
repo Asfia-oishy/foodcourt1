@@ -23,7 +23,15 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 unsigned int loadTexture(char const* path, GLenum textureWrappingModeS, GLenum textureWrappingModeT, GLenum textureFilteringModeMin, GLenum textureFilteringModeMax);
 void processInput(GLFWwindow* window);
+
 void scsToWcs(float sx, float sy, float wcsv[3]);
+
+//void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
+void scsToWcs(float sx, float sy, float wcsv[3]);
+//unsigned int drawControlPoints();
+//void saveControlPoints();
+//void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
+
 long long nCr(int n, int r);
 void BezierCurve(double t, float xy[2], GLfloat ctrlpoints[], int L); //curve calculation er jnno
 unsigned int hollowBezier(GLfloat ctrlpoints[], int L);
